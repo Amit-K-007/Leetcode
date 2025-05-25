@@ -1,3 +1,4 @@
+import { RedisClientType } from "redis";
 import { getRedisClient, closeAllRedisClients } from "./configs/redis";
 import dotenv from "dotenv";
 
@@ -28,7 +29,7 @@ async function runFetcherLoop() {
                 continue;
             }
             await localRedis.lPush("LOCAL_SUBMISSION_QUEUE", submission.element);
-            console.log("Pushed submission to local queue");
+            console.log("Pushed submission to local queue", submission.element);
         } catch (error) {
             console.error("Fetcher loop error:", error);
             await new Promise((resolve) => setTimeout(resolve, 5000)); // Retry after delay

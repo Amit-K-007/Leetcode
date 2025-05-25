@@ -27,7 +27,10 @@ export async function getDescription(req: Request, res: Response): Promise<void>
         }
 
         res.status(200).json({
-            data: problem,
+            data: {
+                ...problem,
+                testCaseCount: problem.testCases.length
+            },
         });
     } 
     catch(error) {

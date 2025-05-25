@@ -26,6 +26,8 @@ model Problem {
   testCases   TestCase[]
   submissions Submission[]
   createdAt   DateTime     @default(now())
+  paramType   String[]
+  returnType  String
 }
 
 model TestCase {

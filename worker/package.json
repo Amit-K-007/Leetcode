@@ -4,7 +4,9 @@
   "description": "To run the `lc-worker` container with systemd and required privileges, execute the following command:",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "worker": "nodemon src/worker.ts",
+    "engine": "nodemon src/executor.ts"
   },
   "keywords": [],
   "author": "",
@@ -12,9 +14,13 @@
   "dependencies": {
     "dotenv": "^16.5.0",
     "redis": "^5.0.1",
-    "uuid": "^11.1.0"
+    "typescript": "^5.8.3",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.20"
   },
   "devDependencies": {
-    "@types/node": "^22.15.17"
+    "@types/node": "^22.15.17",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2"
   }
 }

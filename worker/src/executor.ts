@@ -1,10 +1,21 @@
 import { getRedisClient } from "./configs/redis";
 import dotenv from "dotenv";
-import { execSync, execFile } from "child_process";
+import { execFile } from "child_process";
 import { promises as fs } from "fs";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import { promisify } from "util";
+import { z } from "zod";
+import {
+  IntegerSchema,
+  IntegerArraySchema,
+  StringSchema,
+  StringArraySchema,
+  CharacterSchema,
+  CharacterArraySchema,
+} from "./schemas/schema";
+import { LanguageHandler, languageHandlers } from "./handlers/handler";
+import { initSandbox, cleanupSandbox } from "./sandbox";
 
 dotenv.config();
 
@@ -13,7 +24,10 @@ interface Submission {
   questionId: string;
   lang: "CPP" | "JAVA" | "PYTHON";
   dataInput: string;
-  typedCode: string;
+  userCode: string;
+  systemCode: string;
+  paramType: string[];
+  returnType: string;
   userId: string;
 }
 
@@ -36,138 +50,30 @@ const TIMEOUT_SECONDS = 5;
 const MEMORY_LIMIT_KB = 256000;
 const COMPILE_TIMEOUT_SECONDS = 10;
 const META_FILE = "meta.txt";
-const BOX_ID = parseInt(process.env.BOX_ID || "0", 10);
+const COMPILE_META_FILE = "compile_meta.txt";
+const BOX_ID = parseInt(process.env.BOX_ID ?? "0", 10);
+const SYSTEM_CODE_LANG = "CPP";
 
 const execFileAsync = promisify(execFile);
-
-// Language handler interface
-interface LanguageHandler {
-  sourceFile: string;
-  binaryFile: string;
-  compileCommand: string[] | null;
-  runCommand: string[];
-  wrapCode(code: string, functionName: string): string;
-}
-
-// Language handlers
-const languageHandlers: Record<string, LanguageHandler> = {
-  CPP: {
-    sourceFile: "solution.cpp",
-    binaryFile: "solution",
-    compileCommand: ["g++", "-std=c++17", "-O2", "solution.cpp", "-o", "solution"],
-    runCommand: ["./solution"],
-    wrapCode: (code: string, functionName: string) => `
-      #include <vector>
-      #include <iostream>
-      #include <sstream>
-      ${code}
-      int main() {
-        std::string numsLine, targetLine;
-        std::getline(std::cin, numsLine); // e.g., [2,7,11,15]
-        std::getline(std::cin, targetLine); // e.g., 9
-        // Parse nums
-        std::vector<int> nums;
-        numsLine.erase(0, 1); numsLine.pop_back(); // Remove [ and ]
-        std::stringstream ss(numsLine);
-        std::string num;
-        while (std::getline(ss, num, ',')) {
-          nums.push_back(std::stoi(num));
-        }
-        int target = std::stoi(targetLine);
-        Solution sol;
-        auto result = sol.${functionName}(nums, target);
-        std::cout << "[" << result[0] << "," << result[1] << "]" << std::endl;
-        return 0;
-      }
-    `,
-  },
-  JAVA: {
-    sourceFile: "Solution.java",
-    binaryFile: "Solution",
-    compileCommand: ["javac", "Solution.java"],
-    runCommand: ["java", "Solution"],
-    wrapCode: (code: string, functionName: string) => `
-      import java.util.*;
-      ${code}
-      class Main {
-        public static void main(String[] args) {
-          Scanner scanner = new Scanner(System.in);
-          String numsLine = scanner.nextLine(); // e.g., [2,7,11,15]
-          int target = Integer.parseInt(scanner.nextLine()); // e.g., 9
-          // Parse nums
-          numsLine = numsLine.substring(1, numsLine.length() - 1); // Remove [ and ]
-          String[] numStrs = numsLine.split(",");
-          int[] nums = new int[numStrs.length];
-          for (int i = 0; i < numStrs.length; i++) {
-            nums[i] = Integer.parseInt(numStrs[i].trim());
-          }
-          Solution sol = new Solution();
-          int[] result = sol.${functionName}(nums, target);
-          System.out.println("[" + result[0] + "," + result[1] + "]");
-        }
-      }
-    `,
-  },
-  PYTHON: {
-    sourceFile: "solution.py",
-    binaryFile: "solution.py",
-    compileCommand: null,
-    runCommand: ["python3", "solution.py"],
-    wrapCode: (code: string, functionName: string) => `
-      ${code}
-      import json
-      import sys
-      nums_line = input().strip() # e.g., [2,7,11,15]
-      target = int(input().strip()) # e.g., 9
-      nums = json.loads(nums_line) # Parse JSON-like array
-      sol = Solution()
-      result = sol.${functionName}(nums, target)
-      print(json.dumps(result)) # Output as JSON
-    `,
-  },
-};
-
-// Initialize isolate sandbox
-async function initSandbox(boxId: number): Promise<string> {
-  try {
-    const output = execSync(`isolate --box-id=${boxId} --cg --init`, {
-      stdio: ["ignore", "pipe", "inherit"],
-    });
-    return output.toString().trim();
-  } catch (error) {
-    console.error(`Failed to initialize sandbox ${boxId}:`, error);
-    throw new Error(`Sandbox ${boxId} initialization failed`);
-  }
-}
-
-// Clean up isolate sandbox
-async function cleanupSandbox(boxId: number) {
-  try {
-    execSync(`isolate --box-id=${boxId} --cg --cleanup`, {
-      stdio: ["ignore", "ignore", "inherit"],
-    });
-  } catch (error) {
-    console.error(`Failed to clean up sandbox ${boxId}:`, error);
-  }
-}
 
 // Compile code in sandbox
 async function compileCode(
     handler: LanguageHandler,
     code: string,
     boxId: number,
-    sandboxPath: string
+    sandboxPath: string,
+    isUserCode: boolean,
 ): Promise<{ status: string; error?: string; meta?: Record<string, string> }> {
     if (!handler.compileCommand) {
         return { status: "OK" }; // No compilation for Python
     }
 
-    const codeFile = path.join(sandboxPath, "box", handler.sourceFile);
-    const metaFile = path.join(sandboxPath, "box", "compile_meta.txt");
+    const sourceFile = path.join(sandboxPath, "box", handler.sourceFile);
+    const metaFile = path.join(sandboxPath, "box", COMPILE_META_FILE);
 
     try {
         // Write code file
-        await fs.writeFile(codeFile, code);
+        await fs.writeFile(sourceFile, code);
 
         // Run compilation in isolate
         const isolateArgs = [
@@ -176,7 +82,9 @@ async function compileCode(
             `--cg-mem=${MEMORY_LIMIT_KB}`,
             `--time=${COMPILE_TIMEOUT_SECONDS}`,
             `--wall-time=${COMPILE_TIMEOUT_SECONDS * 1.5}`,
-            `--meta=${metaFile}`,
+            ...(isUserCode ? [`--meta=${metaFile}`] : []),
+            `-E`, `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
+            `-p`,
             `--run`,
             `--`,
             ...handler.compileCommand,
@@ -188,7 +96,7 @@ async function compileCode(
 
         // Read meta-file
         let meta: Record<string, string> = {};
-        try {
+        if(isUserCode) {
             const metaContent = await fs.readFile(metaFile, "utf-8");
             meta = metaContent
               .split("\n")
@@ -198,14 +106,12 @@ async function compileCode(
                 acc[key] = value;
                 return acc;
               }, {} as Record<string, string>);
-        } catch {
-            // Meta-file may not exist for successful compilation
         }
 
         return { status: "OK", meta };
     } catch (error: any) {
         let status = "compilation_error";
-        let errorMessage = error.message || "Compilation failed";
+        let errorMessage = error.message ?? "Compilation failed";
 
         // Check meta-file for details
         try {
@@ -220,8 +126,12 @@ async function compileCode(
               }, {} as Record<string, string>);
 
             if (meta.status) {
-                status = meta.status === "TO" ? "timeout" : meta.status === "RE" ? "runtime_error" : "compilation_error";
-                errorMessage = meta.message || errorMessage;
+              if (meta.status === "TO") {
+                  status = "timeout";
+              } else if (meta.status === "RE") {
+                  status = "runtime_error";
+              } 
+              errorMessage = meta.message || errorMessage;
             }
             return { status, error: errorMessage, meta };
         } catch {
@@ -235,7 +145,8 @@ async function executeCode(
     handler: LanguageHandler,
     input: string,
     boxId: number,
-    sandboxPath: string
+    sandboxPath: string,
+    isUserCode: boolean,
 ): Promise<{ output: string; meta: Record<string, string>; status: string; error?: string }> {
     const inputFile = path.join(sandboxPath, "box", "input.txt");
     const outputFile = path.join(sandboxPath, "box", "output.txt");
@@ -252,7 +163,7 @@ async function executeCode(
           `--cg-mem=${MEMORY_LIMIT_KB}`,
           `--time=${TIMEOUT_SECONDS}`,
           `--wall-time=${TIMEOUT_SECONDS * 1.5}`,
-          `--meta=${metaFile}`,
+          ...(isUserCode ? [`--meta=${metaFile}`] : []),
           `--stdin=input.txt`,
           `--stdout=output.txt`,
           `--run`,
@@ -264,22 +175,25 @@ async function executeCode(
           cwd: path.join(sandboxPath, "box"),
         });
 
-        // Read output and meta-file
         const output = await fs.readFile(outputFile, "utf-8");
-        const metaContent = await fs.readFile(metaFile, "utf-8");
-        const meta = metaContent
-          .split("\n")
-          .filter((line) => line.includes(":"))
-          .reduce((acc, line) => {
-            const [key, value] = line.split(":", 2);
-            acc[key] = value;
-            return acc;
-          }, {} as Record<string, string>);
 
+        let meta: Record<string, string> = {};
+        if(isUserCode) {
+          const metaContent = await fs.readFile(metaFile, "utf-8");
+          meta = metaContent
+            .split("\n")
+            .filter((line) => line.includes(":"))
+            .reduce((acc, line) => {
+              const [key, value] = line.split(":", 2);
+              acc[key] = value;
+              return acc;
+            }, {} as Record<string, string>);
+        }
+          
         return { output, meta, status: meta.status || "OK" };
     } catch (error: any) {
         let status = "error";
-        let errorMessage = error.message || "Unknown error";
+        let errorMessage = error.message ?? "Unknown error";
 
         // Check meta-file for details
         try {
@@ -293,8 +207,12 @@ async function executeCode(
                 return acc;
               }, {} as Record<string, string>);
 
-            if (meta.status) {
-                status = meta.status === "TO" ? "timeout" : meta.status === "RE" ? "runtime_error" : "error";
+            if(meta.status) {
+                if(meta.status === "TO") {
+                    status = "timeout";
+                } else if(meta.status === "RE") {
+                    status = "runtime_error";
+                } 
                 errorMessage = meta.message || errorMessage;
             }
             return { output: "", meta, status, error: errorMessage };
@@ -302,6 +220,39 @@ async function executeCode(
             return { output: "", meta: {}, status, error: errorMessage };
         }
     }
+}
+
+function validateField(testcase: string, requiredType: string): string {
+  let schema: z.ZodSchema;
+
+  switch (requiredType) {
+    case "integer":
+      schema = IntegerSchema;
+      break;
+    case "integer[]":
+      schema = IntegerArraySchema;
+      break;
+    case "string":
+      schema = StringSchema;
+      break;
+    case "string[]":
+      schema = StringArraySchema;
+      break;
+    case "character":
+      schema = CharacterSchema;
+      break;
+    case "character[]":
+      schema = CharacterArraySchema;
+      break;
+    default:
+      throw new Error(`Unsupported requiredType from database: ${requiredType}`);
+  }
+
+  const parseResult = schema.safeParse(testcase);
+  if (!parseResult.success) {
+    throw new Error(`Validation failed for ${requiredType}: ${parseResult.error.message}`);
+  }
+  return parseResult.data;
 }
 
 async function processSubmission(submission: Submission, boxId: number, sandboxPath: string): Promise<ExecutionResult> {
@@ -314,51 +265,86 @@ async function processSubmission(submission: Submission, boxId: number, sandboxP
     };
 
     try {
-        const handler = languageHandlers[submission.lang];
-        if (!handler) {
-          throw new Error(`Unsupported language: ${submission.lang}`);
+        const userHandler = languageHandlers[submission.lang]("userCode");
+        const systemHandler = languageHandlers[SYSTEM_CODE_LANG]("systemCode");
+        if (!userHandler || !systemHandler) {
+            throw new Error("Unsupported code language");
+        }
+
+        const { dataInput, paramType, returnType } = submission;
+
+        const testcases = dataInput.split("\n").filter((line) => line.trim());
+        if(testcases.length % paramType.length != 0) {
+            throw new Error("Number of testcases not matching");
+        }
+        for(let i = 0; i < testcases.length; i++) {
+            const j = i % paramType.length;
+            testcases[i] = validateField(testcases[i], paramType[j]);
         }
 
         // Assume twoSum function; customize per questionId if needed
         const functionName = "twoSum";
-        const wrappedCode = handler.wrapCode(submission.typedCode, functionName);
-
-        // Compile code once
-        const compileResult = await compileCode(handler, wrappedCode, boxId, sandboxPath);
-        if (compileResult.status !== "OK") {
-            result.status = compileResult.status as ExecutionResult["status"];
-            result.error = compileResult.error;
-            result.meta = compileResult.meta;
+        
+        // Compile user code
+        const userWrappedCode = userHandler.wrapCode(submission.userCode, functionName, paramType, returnType);
+        console.log(`Compiling user code for submission ${submission.questionId}`);
+        const userCompileResult = await compileCode(userHandler, userWrappedCode, boxId, sandboxPath, false);
+        console.log("User code compilation:", userCompileResult);
+        if (userCompileResult.status !== "OK") {
+            result.status = userCompileResult.status as ExecutionResult["status"];
+            result.error = userCompileResult.error;
+            result.meta = userCompileResult.meta;
             return result;
         }
 
-        // Split inputs into test cases (one per line for now)
-        const testCases = submission.dataInput.split("\n").filter((line) => line.trim());
+        // Compile system code
+        const systemWrappedCode = systemHandler.wrapCode(submission.systemCode, functionName, paramType, returnType);
+        console.log(`Compiling system code for submission ${submission.questionId}`);
+        const systemCompileResult = await compileCode(systemHandler, systemWrappedCode, boxId, sandboxPath, true);
+        console.log("System code compilation:", systemCompileResult);
+        if (systemCompileResult.status !== "OK") {
+            result.status = "internal_error";
+            result.error = `System code compilation failed: ${systemCompileResult.error}`;
+            result.meta = systemCompileResult.meta;
+            return result;
+        }
 
-        let output = "";
-        for (const testCase of testCases) {
-            const { output: caseOutput, meta, status, error } = await executeCode(
-                handler,
-                testCase,
-                boxId,
-                sandboxPath
-            );
+        for (let i = 0; i < testcases.length; i = i + paramType.length) {
+            let input = testcases[i];
+            for(let j = i + 1; j < i + paramType.length; j++) {
+                input += ('\n' + testcases[j]);
+            }
 
-            if (status !== "OK") {
-                result.status = status as ExecutionResult["status"];
-                result.error = error || `Execution failed with status ${status}`;
-                result.meta = meta;
+            const userCodeOutput = await executeCode(userHandler, input, boxId, sandboxPath, true);
+            if (userCodeOutput.status !== "OK") {
+                result.status = userCodeOutput.status as ExecutionResult["status"];
+                result.error = userCodeOutput.error ?? `Execution failed with status ${userCodeOutput.status}`;
+                result.meta = userCodeOutput.meta;
                 break;
             }
 
-            output += `${caseOutput}\n`;
-            result.meta = meta; // Store last meta for success case
-        }
+            result.meta = userCodeOutput.meta; // Store last meta for success case
 
-        if (result.status === "success") {
-            result.output = output.trim();
+            const systemCodeOutput = await executeCode(systemHandler, input, boxId, sandboxPath, false);
+            if (systemCodeOutput.status !== "OK") {
+                result.status = systemCodeOutput.status as ExecutionResult["status"];
+                result.error = systemCodeOutput.error ?? `Execution failed with status ${systemCodeOutput.status}`;
+                result.meta = systemCodeOutput.meta;
+                break;
+            }
+
+            const userSolution = userCodeOutput.output.split("-->").pop()
+            const systemSolution = systemCodeOutput.output.split("-->").pop()
+
+            console.log("----------------------------------")
+            console.log(input);
+            console.log("\n", userSolution);
+            console.log("\n", systemSolution);
+            console.log("\n", userSolution == systemSolution);
+            console.log("----------------------------------");
         }
       } catch (error) {
+          console.log("Error while processing", error)
           result.status = "error";
           result.error = error instanceof Error ? error.message : "Unknown error";
       }
@@ -380,22 +366,17 @@ async function startContainer() {
             try {
               // Pull from local submission queue
               const submission = await redisClient.brPop("LOCAL_SUBMISSION_QUEUE", 0);
-              if (!submission || !submission.element) {
+              if (!submission?.element) {
                   console.log(`No submission received (box-id=${BOX_ID})`);
                   continue;
               }
 
               // Parse submission
               let parsedSubmission: Submission;
-              try {
-                  parsedSubmission = JSON.parse(submission.element) as Submission;
-              } catch (error) {
-                  console.error(`Invalid submission format (box-id=${BOX_ID}):`, submission.element);
-                  continue;
-              }
+              parsedSubmission = JSON.parse(submission.element) as Submission;
 
               console.log(`Processing submission ${parsedSubmission.questionId} in box-id=${BOX_ID}`);
-
+              console.log(parsedSubmission);
               // Process submission
               const result = await processSubmission(parsedSubmission, BOX_ID, sandboxPath);
 
