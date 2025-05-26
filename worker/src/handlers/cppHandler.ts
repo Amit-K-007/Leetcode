@@ -73,7 +73,7 @@ export function createCppHandler(filename: string): LanguageHandler {
                 variables.push(`param${i}`);
             });
 
-            let outputCode = 'cout << "-->";';
+            let outputCode = 'cout << "{{CODE_ANSWER}}";';
             if (returnType.endsWith("[]")) {
                 outputCode += `
                     cout << "[";

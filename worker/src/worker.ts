@@ -24,7 +24,7 @@ async function runFetcherLoop() {
     while(true) {
         try {
             const submission = await centralRedis.brPop("SUBMISSION_QUEUE", 0);
-            if (!submission || !submission.element) {
+            if (!submission?.element) {
                 console.log("No submission received from central queue");
                 continue;
             }
@@ -45,11 +45,13 @@ async function runAggregatorLoop() {
     while (true) {
         try {
             const result = await localRedis.brPop("LOCAL_RESULT_QUEUE", 0);
-            if (!result || !result.element) {
+            if (!result?.element) {
                 console.log("No result received from local queue");
                 continue;
             }
+            console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
             console.log("Pushed result to main queue:", result.element);
+            console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         } catch (error) {
             console.error("Aggregator loop error:", error);
             await new Promise((resolve) => setTimeout(resolve, 5000)); // Retry after delay
