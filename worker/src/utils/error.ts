@@ -18,8 +18,7 @@ export function handleError(
     testCaseNumber: number = 0,
     input: string = ""
 ): ExecutionResult {
-    const status =
-        error instanceof ExecutionError ? error.status : Status.Error;
+    const status = error instanceof ExecutionError ? error.status : Status.Error;
     const message = error.message || "Unknown error";
     result.status = status;
     result.error = message;

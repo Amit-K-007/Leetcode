@@ -6,10 +6,9 @@ export function createJavaHandler(filename: string): LanguageHandler {
         binaryFile: filename,
         compileCommand: [
             "/usr/local/bin/javac",
-            "-J-Xmx256m", // Limit JVM heap
             `${filename}.java`
         ],
-        runCommand: ["/usr/local/bin/java", "-Xmx128m", "-cp", ".", filename],
+        runCommand: ["/usr/local/bin/java", "-cp", ".", filename],
         wrapCode: (code: string, functionName: string, paramTypes: string[], returnType: string): string => {
             let inputCode = "";
             const variables: string[] = [];

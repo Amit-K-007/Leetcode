@@ -115,7 +115,7 @@ export async function processTestCases(
                         testCaseNumber,
                         input
                     );
-                    handleError(result, error);
+                    handleError(result, error, testCaseNumber, input);
                     if (stopOnFailure) return;
                     continue;
                 }

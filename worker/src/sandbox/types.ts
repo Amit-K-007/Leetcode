@@ -6,6 +6,7 @@ export enum Status {
     InternalError = "internal_error",
     CompilationError = "compilation_error",
     WrongAnswer = "wrong_answer",
+    MemoryLimitExceeded = "memory_limit_exceeded",
 }
 
 export interface Submission {

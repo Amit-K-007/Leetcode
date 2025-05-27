@@ -23,6 +23,7 @@ export async function compileCode(
 
     const sourceFile = path.join(sandboxPath, "box", handler.sourceFile);
     const metaFile = path.join(sandboxPath, "box", COMPILE_META_FILE);
+    const stderrFile = path.join(sandboxPath, "box", "stderr.txt");
 
     try {
         await fs.writeFile(sourceFile, code);
@@ -36,12 +37,13 @@ export async function compileCode(
             `--wall-time=${COMPILE_TIMEOUT_SECONDS * 1.5}`,
             `--fsize=1024`,
             ...(isUserCode ? [`--meta=${metaFile}`] : []),
+            `--stderr=stderr.txt`,
             `-E`, `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
             `--run`,
             `--`,
             ...handler.compileCommand,
         ];
-
+        // console.log(isolateArgs);
         await execFileAsync("isolate", isolateArgs, {
             cwd: path.join(sandboxPath, "box"),
         });
@@ -75,15 +77,31 @@ export async function compileCode(
                     return acc;
                 }, {} as Record<string, string>);
 
+            let stderr = "";
+            try {
+                stderr = await fs.readFile(stderrFile, "utf-8");
+                if (stderr) errorMessage = stderr.trim();
+            } catch {}
+
             if (meta.status) {
-                status =
-                    meta.status === "TO"
-                        ? Status.Timeout
-                        : meta.status === "RE"
-                        ? Status.RuntimeError
-                        : Status.CompilationError;
-                errorMessage = meta.message || errorMessage;
+                if (meta.status === "TO") {
+                    status = Status.Timeout;
+                    errorMessage = "Compilation time limit exceeded";
+                } else if (meta.status === "RE" || meta.status === "SG" || meta.status === "XX") {
+                    if (
+                        meta["cg-oom-killed"] === "1" ||
+                        parseInt(meta["max-rss"] || "0") >= COMPILE_MEMORY_LIMIT_KB ||
+                        meta.exitsig === "9"
+                    ) {
+                        status = Status.MemoryLimitExceeded;
+                        errorMessage = "Compilation memory limit exceeded";
+                    } else {
+                        status = Status.CompilationError;
+                        errorMessage = stderr || meta.message || "Compilation failed";
+                    }
+                }
             }
+            meta["stderr"] = stderr;
             return { status, error: errorMessage, meta };
         } catch {
             return { status, error: errorMessage };

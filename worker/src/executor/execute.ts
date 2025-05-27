@@ -27,6 +27,7 @@ export async function executeCode(
     const inputFile = path.join(sandboxPath, "box", "input.txt");
     const outputFile = path.join(sandboxPath, "box", "output.txt");
     const metaFile = path.join(sandboxPath, "box", META_FILE);
+    const stderrFile = path.join(sandboxPath, "box", "stderr.txt");
 
     try {
         await fs.writeFile(inputFile, input);
@@ -41,13 +42,14 @@ export async function executeCode(
             `--fsize=1024`,
             ...(isUserCode ? [`--meta=${metaFile}`] : []),
             `-E`, `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
+            `--stderr=stderr.txt`,
             `--stdin=input.txt`,
             `--stdout=output.txt`,
             `--run`,
             `--`,
             ...handler.runCommand,
         ];
-
+        // console.log(isolateArgs);
         await execFileAsync("isolate", isolateArgs, {
             cwd: path.join(sandboxPath, "box"),
         });
@@ -83,15 +85,33 @@ export async function executeCode(
                     return acc;
                 }, {} as Record<string, string>);
 
+            let stderr = "";
+            try {
+                stderr = await fs.readFile(stderrFile, "utf-8");
+                if (stderr) errorMessage = stderr.trim();
+            } catch {}
             if (meta.status) {
-                status =
-                    meta.status === "TO"
-                        ? Status.Timeout
-                        : meta.status === "RE"
-                        ? Status.RuntimeError
-                        : Status.Error;
-                errorMessage = meta.message || errorMessage;
+                if (meta.status === "TO") {
+                    status = Status.Timeout;
+                    errorMessage = "Time limit exceeded";
+                } else if (meta.status === "RE" || meta.status === "SG" || meta.status === "XX") {
+                    if (
+                        meta["cg-oom-killed"] === "1" ||
+                        parseInt(meta["max-rss"] || "0") >= EXECUTE_MEMORY_LIMIT_KB ||
+                        meta.exitsig === "9"
+                    ) {
+                        status = Status.MemoryLimitExceeded;
+                        errorMessage = "Memory limit exceeded";
+                    } else {
+                        status = Status.RuntimeError;
+                        errorMessage = stderr || meta.message || "Runtime error";
+                    }
+                } else {
+                    status = Status.Error;
+                    errorMessage = meta.message || errorMessage;
+                }
             }
+            meta["stderr"] = stderr;
             return { output: "", meta, status, error: errorMessage };
         } catch {
             return { output: "", meta: {}, status, error: errorMessage };
