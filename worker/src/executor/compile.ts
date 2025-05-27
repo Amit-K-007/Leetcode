@@ -17,17 +17,16 @@ export async function compileCode(
     sandboxPath: string,
     isUserCode: boolean
 ): Promise<{ status: Status; error?: string; meta?: Record<string, string> }> {
-    if (!handler.compileCommand) {
-        return { status: Status.Success };
-    }
-
     const sourceFile = path.join(sandboxPath, "box", handler.sourceFile);
     const metaFile = path.join(sandboxPath, "box", COMPILE_META_FILE);
     const stderrFile = path.join(sandboxPath, "box", "stderr.txt");
 
     try {
         await fs.writeFile(sourceFile, code);
-
+        if (!handler.compileCommand) {
+            return { status: Status.Success };
+        }
+        
         const isolateArgs = [
             `--box-id=${boxId}`,
             `--processes=${COMPILE_PROCESS_LIMIT}`,

@@ -61,47 +61,55 @@ export function createJavaHandler(filename: string): LanguageHandler {
 
             let outputCode = 'System.out.print("{{CODE_ANSWER}}");';
             let resultType = "";
-            if (returnType === "integer[]") {
-                resultType = "int[]";
-                outputCode += `
-                    System.out.print("[");
-                    for (int i = 0; i < result.length; i++) {
-                        System.out.print(result[i]);
-                        if (i < result.length - 1) System.out.print(",");
-                    }
-                    System.out.print("]");
-                `;
-            } else if (returnType === "string[]") {
-                resultType = "String[]";
-                outputCode += `
-                    System.out.print("[");
-                    for (int i = 0; i < result.length; i++) {
-                        System.out.print(result[i]);
-                        if (i < result.length - 1) System.out.print(",");
-                    }
-                    System.out.print("]");
-                `;
-            } else if (returnType === "character[]") {
-                resultType = "char[]";
-                outputCode += `
-                    System.out.print("[");
-                    for (int i = 0; i < result.length; i++) {
-                        System.out.print("'" + result[i] + "'");
-                        if (i < result.length - 1) System.out.print(",");
-                    }
-                    System.out.print("]");
-                `;
-            } else if (returnType === "integer") {
-                resultType = "int";
-                outputCode += `System.out.print(result);`;
-            } else if (returnType === "string") {
-                resultType = "String";
-                outputCode += `System.out.print(result);`;
-            } else if (returnType === "character") {
-                resultType = "char";
-                outputCode += `System.out.print("'" + result + "'");`;
-            } else {
-                throw new Error(`Unsupported return type: ${returnType}`);
+
+            switch (returnType) {
+                case "integer[]":
+                    resultType = "int[]";
+                    outputCode += `
+                        System.out.print("[");
+                        for (int i = 0; i < result.length; i++) {
+                            System.out.print(result[i]);
+                            if (i < result.length - 1) System.out.print(",");
+                        }
+                        System.out.print("]");
+                    `;
+                    break;
+                case "string[]":
+                    resultType = "String[]";
+                    outputCode += `
+                        System.out.print("[");
+                        for (int i = 0; i < result.length; i++) {
+                            System.out.print(result[i]);
+                            if (i < result.length - 1) System.out.print(",");
+                        }
+                        System.out.print("]");
+                    `;
+                    break;
+                case "character[]":
+                    resultType = "char[]";
+                    outputCode += `
+                        System.out.print("[");
+                        for (int i = 0; i < result.length; i++) {
+                            System.out.print("'" + result[i] + "'");
+                            if (i < result.length - 1) System.out.print(",");
+                        }
+                        System.out.print("]");
+                    `;
+                    break;
+                case "integer":
+                    resultType = "int";
+                    outputCode += `System.out.print(result);`;
+                    break;
+                case "string":
+                    resultType = "String";
+                    outputCode += `System.out.print(result);`;
+                    break;
+                case "character":
+                    resultType = "char";
+                    outputCode += `System.out.print("'" + result + "'");`;
+                    break;
+                default:
+                    throw new Error(`Unsupported return type: ${returnType}`);
             }
 
             return `

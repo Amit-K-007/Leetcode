@@ -1,21 +1,82 @@
 import { LanguageHandler } from "./handler";
 
-// export const pythonHandler: LanguageHandler = {
-//     sourceFile: "solution.py",
-//     binaryFile: "solution.py",
-//     compileCommand: null,
-//     runCommand: ["python3", "solution.py"],
-//     wrapCode: (code: string, functionName: string, paramTypes: string[], returnType: string) => {
-//         return `
-//             ${code}
-//             import json
-//             import sys
-//             nums_line = input().strip() # e.g., [2,7,11,15]
-//             target = int(input().strip()) # e.g., 9
-//             nums = json.loads(nums_line) # Parse JSON-like array
-//             sol = Solution()
-//             result = sol.${functionName}(nums, target)
-//             print(json.dumps(result)) # Output as JSON
-//         `;
-//     },
-// };
+export function createPythonHandler(filename: string): LanguageHandler {
+    return {
+        sourceFile: `${filename}.py`,
+        binaryFile: null,
+        compileCommand: null,
+        runCommand: ["/usr/bin/python3", `${filename}.py`],
+        wrapCode: (
+            code: string,
+            functionName: string,
+            paramTypes: string[],
+            returnType: string
+        ): string => {
+            let inputCode = "";
+            const variables: string[] = [];
+
+            paramTypes.forEach((type, i) => {
+                switch (type) {
+                    case "integer[]":
+                        inputCode += `param${i} = list(map(int, input().strip().split()))\n`;
+                        break;
+                    case "integer":
+                        inputCode += `param${i} = int(input())\n`;
+                        break;
+                    case "string":
+                        inputCode += `param${i} = input().strip()\n`;
+                        break;
+                    case "string[]":
+                        inputCode += `param${i} = input().strip().split()\n`;
+                        break;
+                    case "character":
+                        inputCode += `param${i} = input().strip()[0]\n`;
+                        break;
+                    case "character[]":
+                        inputCode += `param${i} = list(input().strip().replace(" ", ""))\n`;
+                        break;
+                    default:
+                        throw new Error(`Unsupported type: ${type}`);
+                }
+                variables.push(`param${i}`);
+            });
+
+            let outputCode = `print("{{CODE_ANSWER}}", end="")\n`;
+            switch (returnType) {
+                case "integer[]":
+                    outputCode += `print(f"[{result[0]},{result[1]}]")\n`;
+                    break;
+                case "string[]":
+                    outputCode += `print(f"[{','.join(result)}]")\n`;
+                    break;
+                case "character[]":
+                    outputCode += `print(f"[{','.join(f'\\'{c}\\'' for c in result)}]")\n`;
+                    break;
+                case "integer":
+                case "string":
+                    outputCode += `print(result)\n`;
+                    break;
+                case "character":
+                    outputCode += `print(f"'{result}'")\n`;
+                    break;
+                default:
+                    throw new Error(`Unsupported return type: ${returnType}`);
+            }
+
+            return `${code.trim()}
+
+if __name__ == "__main__":
+${inputCode
+    .split("\n")
+    .map(line => line.trim() ? "    " + line.trim() : "")
+    .join("\n")}
+    sol = Solution()
+    result = sol.${functionName}(${variables.join(", ")})
+${outputCode
+    .split("\n")
+    .map(line => line.trim() ? "    " + line.trim() : "")
+    .join("\n")}
+`;
+        },
+    };
+}
