@@ -1,31 +1,122 @@
 import { LanguageHandler } from "./handler";
 
-// export const javaHandler: LanguageHandler = {
-//     sourceFile: "Solution.java",
-//     binaryFile: "Solution",
-//     compileCommand: ["javac", "Solution.java"],
-//     runCommand: ["java", "Solution"],
-//     wrapCode: (code: string, functionName: string, paramTypes: string[], returnType: string) => {
-//         return `
-//             import java.util.*;
-//             ${code}
-//             class Main {
-//                 public static void main(String[] args) {
-//                 Scanner scanner = new Scanner(System.in);
-//                 String numsLine = scanner.nextLine(); // e.g., [2,7,11,15]
-//                 int target = Integer.parseInt(scanner.nextLine()); // e.g., 9
-//                 // Parse nums
-//                 numsLine = numsLine.substring(1, numsLine.length() - 1); // Remove [ and ]
-//                 String[] numStrs = numsLine.split(",");
-//                 int[] nums = new int[numStrs.length];
-//                 for (int i = 0; i < numStrs.length; i++) {
-//                     nums[i] = Integer.parseInt(numStrs[i].trim());
-//                 }
-//                 Solution sol = new Solution();
-//                 int[] result = sol.${functionName}(nums, target);
-//                 System.out.println("[" + result[0] + "," + result[1] + "]");
-//                 }
-//             }
-//         `;
-//     },
-// };
+export function createJavaHandler(filename: string): LanguageHandler {
+    return {
+        sourceFile: `${filename}.java`,
+        binaryFile: filename,
+        compileCommand: [
+            "/usr/local/bin/javac",
+            "-J-Xmx256m", // Limit JVM heap
+            `${filename}.java`
+        ],
+        runCommand: ["/usr/local/bin/java", "-Xmx128m", "-cp", ".", filename],
+        wrapCode: (code: string, functionName: string, paramTypes: string[], returnType: string): string => {
+            let inputCode = "";
+            const variables: string[] = [];
+
+            inputCode += "Scanner scanner = new Scanner(System.in);\n";
+            paramTypes.forEach((type, i) => {
+                switch (type) {
+                    case "integer[]":
+                        inputCode += `
+                            String line${i} = scanner.nextLine();
+                            String[] parts${i} = line${i}.split(" ");
+                            int[] param${i} = new int[parts${i}.length];
+                            for (int j = 0; j < parts${i}.length; j++) {
+                                param${i}[j] = Integer.parseInt(parts${i}[j]);
+                            }
+                        `;
+                        break;
+                    case "integer":
+                        inputCode += `
+                            int param${i} = scanner.nextInt();
+                        `;
+                        break;
+                    case "string":
+                        inputCode += `
+                            String param${i} = scanner.next();
+                        `;
+                        break;
+                    case "string[]":
+                        inputCode += `
+                            String line${i} = scanner.nextLine();
+                            String[] param${i} = line${i}.split(" ");
+                        `;
+                        break;
+                    case "character":
+                        inputCode += `
+                            char param${i} = scanner.next().charAt(0);
+                        `;
+                        break;
+                    case "character[]":
+                        inputCode += `
+                            String line${i} = scanner.nextLine();
+                            char[] param${i} = line${i}.replaceAll("\\s+", "").toCharArray();
+                        `;
+                        break;
+                    default:
+                        throw new Error(`Unsupported type: ${type}`);
+                }
+                variables.push(`param${i}`);
+            });
+
+            let outputCode = 'System.out.print("{{CODE_ANSWER}}");';
+            let resultType = "";
+            if (returnType === "integer[]") {
+                resultType = "int[]";
+                outputCode += `
+                    System.out.print("[");
+                    for (int i = 0; i < result.length; i++) {
+                        System.out.print(result[i]);
+                        if (i < result.length - 1) System.out.print(",");
+                    }
+                    System.out.print("]");
+                `;
+            } else if (returnType === "string[]") {
+                resultType = "String[]";
+                outputCode += `
+                    System.out.print("[");
+                    for (int i = 0; i < result.length; i++) {
+                        System.out.print(result[i]);
+                        if (i < result.length - 1) System.out.print(",");
+                    }
+                    System.out.print("]");
+                `;
+            } else if (returnType === "character[]") {
+                resultType = "char[]";
+                outputCode += `
+                    System.out.print("[");
+                    for (int i = 0; i < result.length; i++) {
+                        System.out.print("'" + result[i] + "'");
+                        if (i < result.length - 1) System.out.print(",");
+                    }
+                    System.out.print("]");
+                `;
+            } else if (returnType === "integer") {
+                resultType = "int";
+                outputCode += `System.out.print(result);`;
+            } else if (returnType === "string") {
+                resultType = "String";
+                outputCode += `System.out.print(result);`;
+            } else if (returnType === "character") {
+                resultType = "char";
+                outputCode += `System.out.print("'" + result + "'");`;
+            } else {
+                throw new Error(`Unsupported return type: ${returnType}`);
+            }
+
+            return `
+                import java.util.*;
+                ${code}
+                public class ${filename} {
+                    public static void main(String[] args) {
+                        ${inputCode}
+                        Solution sol = new Solution();
+                        ${resultType} result = sol.${functionName}(${variables.join(", ")});
+                        ${outputCode}
+                    }
+                }
+            `;
+        },
+    };
+}

@@ -3,10 +3,10 @@ import path from "path";
 import { LanguageHandler } from "../handlers/handler";
 import {
     Status,
-    MEMORY_LIMIT_KB,
     COMPILE_TIMEOUT_SECONDS,
-    PROCESS_LIMIT,
+    COMPILE_PROCESS_LIMIT,
     COMPILE_META_FILE,
+    COMPILE_MEMORY_LIMIT_KB,
 } from "../sandbox/types";
 import { execFileAsync } from "../utils/exec";
 
@@ -29,15 +29,14 @@ export async function compileCode(
 
         const isolateArgs = [
             `--box-id=${boxId}`,
+            `--processes=${COMPILE_PROCESS_LIMIT}`,
             `--cg`,
-            `--cg-mem=${MEMORY_LIMIT_KB}`,
+            `--cg-mem=${COMPILE_MEMORY_LIMIT_KB}`,
             `--time=${COMPILE_TIMEOUT_SECONDS}`,
             `--wall-time=${COMPILE_TIMEOUT_SECONDS * 1.5}`,
-            `--processes=${PROCESS_LIMIT}`,
+            `--fsize=1024`,
             ...(isUserCode ? [`--meta=${metaFile}`] : []),
-            `-E`,
-            `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
-            `-p`,
+            `-E`, `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
             `--run`,
             `--`,
             ...handler.compileCommand,

@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "worker": "nodemon src/worker.ts",
-    "engine": "nodemon src/index.ts"
+    "engine": "nodemon src/engine.ts"
   },
   "keywords": [],
   "author": "",

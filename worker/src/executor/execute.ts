@@ -5,8 +5,8 @@ import {
     ExecutionResult,
     Status,
     TIMEOUT_SECONDS,
-    MEMORY_LIMIT_KB,
-    PROCESS_LIMIT,
+    EXECUTE_MEMORY_LIMIT_KB,
+    EXECUTE_PROCESS_LIMIT,
     META_FILE,
 } from "../sandbox/types";
 import { ExecutionError } from "../utils/error";
@@ -33,12 +33,14 @@ export async function executeCode(
 
         const isolateArgs = [
             `--box-id=${boxId}`,
+            `--processes=${EXECUTE_PROCESS_LIMIT}`,
             `--cg`,
-            `--cg-mem=${MEMORY_LIMIT_KB}`,
+            `--cg-mem=${EXECUTE_MEMORY_LIMIT_KB}`,
             `--time=${TIMEOUT_SECONDS}`,
             `--wall-time=${TIMEOUT_SECONDS * 1.5}`,
-            `--processes=${PROCESS_LIMIT}`,
+            `--fsize=1024`,
             ...(isUserCode ? [`--meta=${metaFile}`] : []),
+            `-E`, `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
             `--stdin=input.txt`,
             `--stdout=output.txt`,
             `--run`,

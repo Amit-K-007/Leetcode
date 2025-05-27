@@ -53,9 +53,11 @@ export const REDIS_CONFIG = {
 };
 
 export const TIMEOUT_SECONDS = 3;
-export const MEMORY_LIMIT_KB = 256000;
+export const EXECUTE_MEMORY_LIMIT_KB = 256000;
+export const EXECUTE_PROCESS_LIMIT = 32;
+export const COMPILE_MEMORY_LIMIT_KB = 524288;
+export const COMPILE_PROCESS_LIMIT = 32;
 export const COMPILE_TIMEOUT_SECONDS = 5;
-export const PROCESS_LIMIT = 1;
 export const META_FILE = "meta.txt";
 export const COMPILE_META_FILE = "compile_meta.txt";
 export const BOX_ID = parseInt(process.env.BOX_ID ?? "0", 10);

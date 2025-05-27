@@ -1,4 +1,5 @@
 import { createCppHandler } from "./cppHandler";
+import { createJavaHandler } from "./javaHandler";
 
 export interface LanguageHandler {
     sourceFile: string;
@@ -15,4 +16,5 @@ export interface LanguageHandler {
 
 export const languageHandlers: Record<string, (filename: string) => LanguageHandler> = {
     CPP: createCppHandler,
+    JAVA: createJavaHandler,
 };

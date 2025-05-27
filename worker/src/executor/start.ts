@@ -12,7 +12,6 @@ export async function startContainer(): Promise<void> {
         console.log(`Sandbox initialized at ${sandboxPath}`);
 
         const redisClient = await getRedisClient(REDIS_CONFIG);
-        console.log(REDIS_CONFIG);
         while (true) {
             try {
                 const submission = await redisClient.brPop("LOCAL_SUBMISSION_QUEUE", 0);
