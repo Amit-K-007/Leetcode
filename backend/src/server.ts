@@ -5,7 +5,7 @@ import { authRoutes, problemsetRoutes, problemsRoutes } from "./routes";
 dotenv.config();
 
 const app: Express = express();
-const port = process.env.SERVER_PORT || 3000;
+const port = process.env.SERVER_PORT ?? 3000;
 
 app.use(express.json());
 

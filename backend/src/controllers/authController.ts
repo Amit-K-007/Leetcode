@@ -49,7 +49,7 @@ export async function signup(req: Request, res: Response): Promise<void> {
         const token = jwt.sign({userId: user.id}, process.env.JWT_SECRET!);
         res.status(200).json({
             message: "User registered successfully",
-            token: `Bearer_${token}`,
+            token: `Bearer ${token}`,
         });
     }
     catch(error) {
@@ -95,7 +95,7 @@ export async function login(req: Request, res: Response): Promise<void> {
         const token = jwt.sign({userId: existingUser.id}, process.env.JWT_SECRET!);
         res.status(200).json({
             message: "User logged in successfully",
-            token: `Bearer_${token}`,
+            token: `Bearer ${token}`,
         });
     }
     catch(error) {

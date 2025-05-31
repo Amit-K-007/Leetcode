@@ -49,12 +49,11 @@ async function runAggregatorLoop() {
                 console.log("No result received from local queue");
                 continue;
             }
-            console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-            console.log("Pushed result to main queue:", result.element);
-            console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            centralRedis.publish("RESULT_CHANNEL", result.element);
+            console.log("Published result to RESULT_CHANNEL:", result.element);
         } catch (error) {
             console.error("Aggregator loop error:", error);
-            await new Promise((resolve) => setTimeout(resolve, 5000)); // Retry after delay
+            await new Promise((resolve) => setTimeout(resolve, 5000));
         }
     }
 }
