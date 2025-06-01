@@ -18,16 +18,18 @@ model User {
 }
 
 model Problem {
-  id          Int          @id @default(autoincrement())
-  title       String
-  titleSlug   String       @unique
-  description String
-  difficulty  Difficulty
-  testCases   TestCase[]
-  submissions Submission[]
-  createdAt   DateTime     @default(now())
-  paramType   String[]
-  returnType  String
+  id           Int          @id @default(autoincrement())
+  title        String
+  titleSlug    String       @unique
+  description  String
+  difficulty   Difficulty
+  testCases    TestCase[]
+  submissions  Submission[]
+  createdAt    DateTime     @default(now())
+  paramType    String[]
+  returnType   String
+  systemCode   String
+  functionName String
 }
 
 model TestCase {

@@ -31,9 +31,6 @@ export async function startContainer(): Promise<void> {
                           BOX_ID,
                           sandboxPath
                       );
-                console.log("###########################################");
-                console.log(result);
-                console.log("###########################################");
                 await redisClient.lPush(
                     "LOCAL_RESULT_QUEUE",
                     JSON.stringify(result)

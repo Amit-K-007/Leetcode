@@ -17,9 +17,9 @@ export type SignupInput = z.infer<typeof signupInput>;
 
 export const solutionInput = z.object({
     questionId: z.string(),
-    lang: z.enum(["PYTHON", "JAVA", "CPP"]),
+    language: z.enum(["PYTHON", "JAVA", "CPP"]),
     dataInput: z.string(),
-    typedCode: z.string(),
+    userCode: z.string(),
 });
 
 export type SolutionInput = z.infer<typeof solutionInput>;

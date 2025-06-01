@@ -57,11 +57,28 @@ export async function interpretSolution(req: AuthRequest, res: Response): Promis
             });
             return;
         }
-
-        body["userId"] = req.user?.userId;
         
+        const problem = await prisma.problem.findUnique({
+            where: {
+                id: parseInt(result.data.questionId),
+            }
+        });
+        if(!problem) {
+            res.status(400).json({
+                message: 'Invalid question ID',
+            });
+            return;
+        }
+        
+        body["functionName"] = problem.functionName;
+        body["systemCode"] = problem.systemCode;
+        body["paramType"] = problem.paramType;
+        body["returnType"] = problem.returnType;
+        body["isAnswer"] = false;
+        body["userId"] =    req.user?.userId;
+
         const redisClient = await getRedisClient();
-        await redisClient.lPush("SUBMISSION_QUEUE", JSON.stringify(body));
+        await redisClient.rPush("SUBMISSION_QUEUE", JSON.stringify(body));
         res.status(200).json({
             message: "Solution submitted for evaluation",
         });
