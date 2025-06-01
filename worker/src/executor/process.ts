@@ -173,6 +173,7 @@ export async function processSubmission(
         expected_code_answer: [],
         correctTestCases: 0,
         totalTestCases: 0,
+        isAnswer: false,
         execution_time: [],
         execution_memory: [],
         errors: [],
@@ -279,9 +280,8 @@ export async function processAnswer(
     boxId: number,
     sandboxPath: string
 ): Promise<ExecutionResult> {
-    const submissionId = uuidv4();
     const result: ExecutionResult = {
-        submissionId,
+        submissionId: submission.submissionId!,
         userId: submission.userId,
         questionId: submission.questionId,
         status: Status.Success,
@@ -292,6 +292,7 @@ export async function processAnswer(
         execution_memory: [],
         correctTestCases: 0,
         totalTestCases: 0,
+        isAnswer: true,
         errors: [],
     };
 

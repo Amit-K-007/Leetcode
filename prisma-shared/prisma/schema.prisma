@@ -49,10 +49,10 @@ model Submission {
   language         Language
   status           SubmissionStatus @default(PENDING)
   executionTime    Float?
-  executionMemory Float?
+  executionMemory  Float?
   correctTestCases Int?
-  totalTestCases  Int?
-  createdAt     DateTime         @default(now())
+  totalTestCases   Int?
+  createdAt        DateTime         @default(now())
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)

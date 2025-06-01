@@ -12,11 +12,10 @@
   "license": "ISC",
   "devDependencies": {
     "nodemon": "^3.1.9",
-    "prisma": "^6.5.0",
     "ts-node": "^10.9.2"
   },
   "dependencies": {
-    "@prisma/client": "^6.5.0",
+    "@amit-k/prisma-shared": "^1.0.9",
     "@types/express": "^5.0.1",
     "@types/jsonwebtoken": "^9.0.9",
     "bcryptjs": "^3.0.2",

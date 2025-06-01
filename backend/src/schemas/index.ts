@@ -15,11 +15,19 @@ export const signupInput = z.object({
 
 export type SignupInput = z.infer<typeof signupInput>;
 
-export const solutionInput = z.object({
+export const submissionInput = z.object({
     questionId: z.string(),
     language: z.enum(["PYTHON", "JAVA", "CPP"]),
     dataInput: z.string(),
     userCode: z.string(),
 });
 
-export type SolutionInput = z.infer<typeof solutionInput>;
+export type SubmissionInput = z.infer<typeof submissionInput>;
+
+export const answerInput = z.object({
+    questionId: z.string(),
+    language: z.enum(["PYTHON", "JAVA", "CPP"]),
+    userCode: z.string(),
+});
+
+export type AnswerInput = z.infer<typeof answerInput>;

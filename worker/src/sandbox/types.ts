@@ -10,6 +10,7 @@ export enum Status {
 }
 
 export interface Submission {
+    submissionId?: string;
     questionId: string;
     language: "CPP" | "JAVA" | "PYTHON";
     functionName: string;
@@ -44,6 +45,7 @@ export interface ExecutionResult {
     correctTestCases: number;
     totalTestCases: number;
     lastTestCase?: LastTestCase;
+    isAnswer: boolean;
     error?: string;
     errors?: string[];
 }

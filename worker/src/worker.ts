@@ -1,10 +1,10 @@
-import { RedisClientType } from "redis";
 import { getRedisClient, closeAllRedisClients } from "./configs/redis";
+import prisma, { SubmissionStatus } from "@amit-k/prisma-shared";
 import dotenv from "dotenv";
+import { Submission, ExecutionResult } from "./sandbox/types"; 
 
 dotenv.config();
 
-// Redis configurations
 const REDIS_CONFIGS = {
     central: {
         key: "central",
@@ -14,6 +14,17 @@ const REDIS_CONFIGS = {
         key: "local",
         url: process.env.LOCAL_REDIS_URL!,
     },
+};
+
+const statusToSubmissionStatus: Record<string, SubmissionStatus> = {
+    success: SubmissionStatus.ACCEPTED,
+    error: SubmissionStatus.ERROR,
+    timeout: SubmissionStatus.TIME_LIMIT_EXCEEDED,
+    runtime_error: SubmissionStatus.RUNTIME_ERROR,
+    internal_error: SubmissionStatus.ERROR,
+    compilation_error: SubmissionStatus.COMPILATION_ERROR,
+    wrong_answer: SubmissionStatus.WRONG_ANSWER,
+    memory_limit_exceeded: SubmissionStatus.MEMORY_LIMIT_EXCEEDED,
 };
 
 async function runFetcherLoop() {
@@ -28,11 +39,30 @@ async function runFetcherLoop() {
                 console.log("No submission received from central queue");
                 continue;
             }
-            await localRedis.lPush("LOCAL_SUBMISSION_QUEUE", submission.element);
-            console.log("Pushed submission to local queue", submission.element);
+
+            const submissionData: Submission = JSON.parse(submission.element);
+            if(submissionData.isAnswer) {
+                try {
+                    const currentSubmission = await prisma.submission.create({
+                        data: {
+                            userId: submissionData.userId,
+                            problemId: parseInt(submissionData.questionId),
+                            code: submissionData.userCode,
+                            language: submissionData.language.toUpperCase() as 'JAVA' | 'CPP' | 'PYTHON',
+                        },
+                    });
+                    submissionData.submissionId = currentSubmission.id;
+                } catch (dbError) {
+                    console.error("DB create error:", dbError);
+                    continue;
+                }
+            }
+
+            await localRedis.lPush("LOCAL_SUBMISSION_QUEUE", JSON.stringify(submissionData));
+            console.log("Pushed submission to local queue", JSON.stringify(submissionData));
         } catch (error) {
             console.error("Fetcher loop error:", error);
-            await new Promise((resolve) => setTimeout(resolve, 5000)); // Retry after delay
+            await new Promise((resolve) => setTimeout(resolve, 5000));
         }
     }
 }
@@ -49,7 +79,33 @@ async function runAggregatorLoop() {
                 console.log("No result received from local queue");
                 continue;
             }
-            centralRedis.publish("RESULT_CHANNEL", result.element);
+
+            const resultData: ExecutionResult = JSON.parse(result.element);
+            if(resultData.isAnswer) {
+                try {
+                    await prisma.submission.update({
+                        where: {
+                            id: resultData.submissionId,
+                        },
+                        data: {
+                            status: statusToSubmissionStatus[resultData.status] ?? "ERROR",
+                            executionTime: resultData.execution_time.length
+                                ? parseFloat((resultData.execution_time.reduce((sum, time) => sum + parseFloat(time), 0) / resultData.execution_time.length).toFixed(3))
+                                : null,
+                            executionMemory: resultData.execution_memory.length
+                                ? parseFloat(Math.max(...resultData.execution_memory.map(m => parseFloat(m))).toFixed(3))
+                                : null,
+                            correctTestCases: resultData.correctTestCases,
+                            totalTestCases: resultData.totalTestCases,
+                        }
+                    });
+                } catch (dbError) {
+                    console.error("DB update error:", dbError);
+                    continue;
+                }
+            }
+
+            await centralRedis.publish("RESULT_CHANNEL", result.element);
             console.log("Published result to RESULT_CHANNEL:", result.element);
         } catch (error) {
             console.error("Aggregator loop error:", error);

@@ -1,0 +1,19 @@
+{
+  "name": "@amit-k/prisma-shared",
+  "version": "1.0.9",
+  "main": "dist/index.js",
+  "scripts": {
+    "postinstall": "npx prisma generate"
+  },
+  "keywords": [],
+  "author": "Amit Kulkarni",
+  "license": "ISC",
+  "description": "Leetcode's common package for shared prisma clients.",
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "prisma": "^6.8.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.8.2"
+  }
+}
