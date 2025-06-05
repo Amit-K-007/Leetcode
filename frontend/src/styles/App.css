@@ -1,0 +1,4 @@
+.gutter:hover {
+    cursor: e-resize;
+    background: #007BFF;
+}

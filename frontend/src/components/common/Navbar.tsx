@@ -44,7 +44,7 @@ const Navbar = ({
   },
   menu = [
     { title: "Explore", url: "/" },
-    { title: "Problems", url: "/problems" },
+    { title: "Problems", url: "/problemset" },
   ],
   auth = {
     login: { title: "Login", url: "/login" },
@@ -52,7 +52,7 @@ const Navbar = ({
   },
 }: NavbarProps) => {
   return (
-    <section className="py-4 bg-[#f9f9f9]">
+    <section className="py-4">
       {/* Desktop Menu */}
       <nav className="hidden justify-between sm:flex">
         <div className="flex items-center gap-6">
