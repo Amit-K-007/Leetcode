@@ -4,10 +4,10 @@ export function ProblemHeader() {
   return (
     <div className="my-4 flex flex-col">
       <div className="flex items-center">
-        <div className="text-3xl font-bold grow">
+        <div className="text-2xl font-bold grow">
           1. Two Sum
         </div>
-        <div className="flex items-center gap-2 mr-4 font-light text-[1.05rem]">
+        <div className="flex items-center gap-2 mr-4 font-light text-md">
           Solved <CheckCircle size={16} className="text-green-500 mx-auto" />
         </div>
       </div>

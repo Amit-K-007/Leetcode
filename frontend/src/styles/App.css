@@ -1,4 +1,9 @@
-.gutter:hover {
-    cursor: e-resize;
-    background: #007BFF;
+.gutter-vertical:hover {
+    cursor: ns-resize;
+    background: #007bff8b;
+}
+
+.gutter-horizontal:hover {
+    cursor: ew-resize;
+    background: #007bff8b;
 }
