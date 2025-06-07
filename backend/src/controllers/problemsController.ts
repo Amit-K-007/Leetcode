@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../configs/db";
+import prisma from "@amit-k/prisma-shared";
 import { answerInput, submissionInput } from "../schemas";
 import { AuthRequest } from "../middlewares";
 import { getRedisClient } from "../configs/redis";

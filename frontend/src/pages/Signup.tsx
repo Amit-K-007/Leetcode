@@ -13,9 +13,43 @@ import { Label } from "@/components/ui/label"
 import googleLogo from "@/assets/google.svg"
 import { Link, useNavigate } from "react-router-dom"
 import { CardLogo } from "@/components/common/CardLogo"
+import { useAuth } from "@/hooks/useAuth"
+import { useState, type FormEvent } from "react"
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function Signup() {
   const navigate = useNavigate();
+  const { setToken } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignup = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+    
+    try {
+      const response = await axios.post(`${API_URL}/accounts/signup`, { email, password });
+      const { token } = response.data;
+
+      setToken(token);
+      localStorage.setItem("token", token);
+
+      navigate("/");
+    } catch (err) {
+      setError(
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : "Failed to sign up. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-900">
@@ -31,14 +65,15 @@ export function Signup() {
           </CardAction>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={ handleSignup }>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="john@gmail.com"
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
@@ -52,18 +87,24 @@ export function Signup() {
                     Forgot your password?
                   </Link>
                 </div>
-                <Input id="password" type="password" required />
+                <Input 
+                  id="password" 
+                  type="password" 
+                  onChange={(e) => setPassword(e.target.value)}
+                  required 
+                />
               </div>
+              {error && <p className="text-red-500 text-sm">{error}</p>}
             </div>
+            <Button type="submit" className="w-full mt-6" disabled={isLoading}>
+              {isLoading ? "Signing up..." : "Sign Up"}
+            </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex-col gap-2">
-          <Button type="submit" className="w-full">
-            Sign Up
-          </Button>
-          or
+        <div className="flex justify-center text-center text-sm">or</div>
+        <CardFooter>
           <Button variant="outline" className="w-full">
-            <img src={googleLogo} alt="Google" className="w-6 h-6"/> Sign up with Google
+            <img src={googleLogo} alt="Google" className="w-6 h-6 mr-2" /> Sign up with Google
           </Button>
         </CardFooter>
       </Card>

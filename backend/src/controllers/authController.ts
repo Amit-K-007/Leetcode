@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../configs/db";
+import prisma from "@amit-k/prisma-shared";
 import { loginInput, signupInput } from "../schemas";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -18,26 +18,22 @@ export async function signup(req: Request, res: Response): Promise<void> {
 
         const existingUser = await prisma.user.findFirst({
             where: {
-                OR: [
-                    { email: body.email },
-                    { username: body.username },
-                ]
+                email: body.email,
             }
         });
         if(existingUser) {
             res.status(400).json({
-                message: existingUser.email == body.email
-                ? "Email already registered"
-                : "Username already registered"
+                message: "Email already registered",
             });
             return;
         }
 
         const hashedPassword = await bcrypt.hash(body.password, 10);
+        const username = body.email.split("@")[0] + Date.now();
         const user = await prisma.user.create({
             data: {
-                name: body.username,
-                username: body.username,
+                name: username,
+                username: username,
                 email: body.email,
                 password: hashedPassword,
             },

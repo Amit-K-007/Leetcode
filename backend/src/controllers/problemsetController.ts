@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { getRedisClient } from "../configs/redis";
-import { prisma } from "../configs/db";
-import { $Enums } from "@prisma/client";
+import prisma, { $Enums } from "@amit-k/prisma-shared";
 
 interface Problem {
     id: number;
@@ -59,6 +58,7 @@ async function getProblemCount(): Promise<number> {
     }
   
     const count = await prisma.problem.count();
+    console.log(count);
     await redisClient.setEx(cacheKey, 3600 , count.toString());
     return count;
 }

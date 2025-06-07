@@ -1,6 +1,6 @@
-import { PrismaClient, SubmissionStatus } from '@prisma/client';
+import { $Enums, PrismaClient, SubmissionStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 export default prisma;
-export { SubmissionStatus };
+export { SubmissionStatus, $Enums };

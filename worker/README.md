@@ -24,6 +24,9 @@ docker run --network=lc_internal_network --name local_redis -d -p 6381:6379 redi
  docker run --name lc_database -e POSTGRES_PASSWORD=mysecretpassword -d -p 5435:5432 postgres
 ```
 
+# Running Prisma Studio
+npx prisma studio --schema=node_modules/@amit-k/prisma-shared/prisma/schema.prisma
+
 # For code testing with redis-cli
 ## CPP Submission
 RPUSH SUBMISSION_QUEUE "{\n  \"questionId\": \"1\",\n  \"language\": \"CPP\",\n  \"functionName\": \"twoSum\",\n  \"dataInput\": \"[2,7,11,15]\\n9\\n[3,2,4]\\n6\\n[3,3]\\n6\",\n  \"userCode\": \"class Solution {\\npublic:\\n    vector<int> twoSum(vector<int>& nums, int target) {\\n        return {0, 1};\\n    }\\n};\",\n  \"systemCode\": \"class Solution {\\npublic:\\n    vector<int> twoSum(vector<int>& nums, int target) {\\n        unordered_map<int, int> m;\\n        for (int i = 0; i < nums.size(); i++) {\\n            int complement = target - nums[i];\\n            if (m.count(complement)) return {m[complement], i};\\n            m[nums[i]] = i;\\n        }\\n        return {};\\n    }\\n};\",\n  \"userId\": \"39fab0ed-613a-4f4d-b8d9-0b41955a7230\",\n  \"paramType\": [\"integer[]\", \"integer\"],\n  \"returnType\": \"integer[]\",\n  \"isAnswer\": false\n}"

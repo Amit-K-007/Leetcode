@@ -11,14 +11,17 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "nodemon": "^3.1.9",
+    "prisma": "^6.9.0",
     "ts-node": "^10.9.2"
   },
   "dependencies": {
-    "@amit-k/prisma-shared": "^1.0.9",
+    "@amit-k/prisma-shared": "^1.0.10",
     "@types/express": "^5.0.1",
     "@types/jsonwebtoken": "^9.0.9",
     "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
