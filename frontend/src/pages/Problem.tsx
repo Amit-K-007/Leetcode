@@ -5,6 +5,7 @@ import { TestcaseCard } from "@/components/problem/TestcaseCard";
 import { TestcaseNavbar } from "@/components/problem/TestcaseNavbar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useSocket } from "@/hooks/useSocket";
 import axios from "axios";
 import { BookText, CircleFadingArrowUp, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -44,9 +45,9 @@ type Language = "CPP" | "PYTHON" | "JAVA";
 const API_URL = import.meta.env.VITE_API_URL;
 
 export function Problem() {
-  
   const { slug } = useParams<{ slug: string }>();
   const { token } = useAuth();
+  const { socket } = useSocket();
   const [problemInfo, setProblemInfo] = useState<ProblemInfo>({ id: null, title: null, description: null, functionName: null });
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [codeSnippets, setCodeSnippets] = useState<CodeSnippets[]>([]);
@@ -79,6 +80,20 @@ export function Problem() {
 
     fetchProblemData();
   }, [slug]);
+
+  useEffect(() => {
+    if(!socket) return;
+
+    const handleResult = (data: any) => {
+      console.log("Result received:", data);
+    };
+
+    socket.on("result", handleResult);
+
+    return () => {
+      socket.off("result", handleResult);
+    };
+  }, [socket]);
 
   const handleSubmission = async () => {
     setLoading(true);

@@ -10,6 +10,7 @@ import postgresLogo from "@/assets/postgresql-color.svg";
 import dockerLogo from "@/assets/docker-color.svg";
 import redisLogo from "@/assets/redis-color.svg";
 import socketioLogo from "@/assets/socketdotio-color.svg";
+import squarePattern from "@/assets/square-alt-grid.svg";
 
 const techStack1 = [
   { src: typescriptLogo, alt: "Typescript" },
@@ -28,7 +29,7 @@ export function Hero() {
       <div className="absolute inset-x-0 top-0 flex h-full w-full items-center justify-center opacity-100">
         <img
           alt="background"
-          src="https://shadcnblocks.com/images/block/patterns/square-alt-grid.svg"
+          src={squarePattern}
           className="opacity-80 [mask-image:radial-gradient(75%_75%_at_center,white,transparent)]"
         />
       </div>

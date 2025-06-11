@@ -18,7 +18,6 @@ export function TestcaseCard({
   setTestCases,
   variableNames,
 }: Readonly<TestcaseCardProps>) {
-  console.log(variableNames);
   const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
