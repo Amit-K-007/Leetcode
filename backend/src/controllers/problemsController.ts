@@ -4,19 +4,32 @@ import { answerInput, submissionInput } from "../schemas";
 import { AuthRequest } from "../middlewares";
 import { getRedisClient } from "../configs/redis";
 
-export function redirectProblemset(req: Request, res: Response): void {
-    res.redirect(301, `/api/v1/problemset`);
-}
-
-export async function getDescription(req: Request, res: Response): Promise<void> {
+export async function getProblemData(req: Request, res: Response): Promise<void> {
     try {
         const { problemSlug } = req.params;
         const problem = await prisma.problem.findUnique({
             where: {
                 titleSlug: problemSlug,
             },
-            include: {
-                testCases: true
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                difficulty: true,
+                functionName: true,
+                testCases: {
+                    select: {
+                        input: true,
+                        output: true,
+                    }
+                },
+                paramName: true,
+                codeSnippets: {
+                    select: {
+                        language: true,
+                        code: true,
+                    }
+                }
             }
         });
         if(!problem) {
@@ -39,11 +52,6 @@ export async function getDescription(req: Request, res: Response): Promise<void>
             message: 'Internal server error',
         });
     }
-}
-
-export function redirectDescription(req: Request, res: Response): void {
-    const { problemSlug } = req.params;
-    res.redirect(301, `/api/v1/problems/${problemSlug}/description`);
 }
 
 export async function interpretSolution(req: AuthRequest, res: Response): Promise<void> {

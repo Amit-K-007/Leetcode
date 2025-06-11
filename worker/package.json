@@ -12,7 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@amit-k/prisma-shared": "^1.0.10",
+    "@amit-k/prisma-shared": "^1.0.12",
     "dotenv": "^16.5.0",
     "redis": "^5.0.1",
     "uuid": "^11.1.0",

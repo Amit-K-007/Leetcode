@@ -57,3 +57,15 @@ RPUSH SUBMISSION_QUEUE "{\"questionId\":\"1\",\"language\":\"PYTHON\",\"function
 
 ## Python time
 RPUSH SUBMISSION_QUEUE "{\"questionId\":\"1\",\"language\":\"PYTHON\",\"functionName\":\"twoSum\",\"dataInput\":\"[2,7,11,15]\\n9\\n[3,2,4]\\n6\\n[3,3]\\n6\",\"userCode\":\"class Solution:\\n    def twoSum(self, nums, target):\\n        while True:\\n            pass\\n        return [0, 1]\",\"systemCode\":\"class Solution {\\npublic:\\n    vector<int> twoSum(vector<int>& nums, int target) {\\n        unordered_map<int, int> m;\\n        for (int i = 0; i < nums.size       (); i++) {\\n            int complement = target - nums[i];\\n            if (m.count(complement)) return {m[complement], i};\\n            m[nums[i]] = i;\\n        }\\n return {};\\n    }\\n};\",\"userId\":\"39fab0ed-613a-4f4d-b8d9-0b41955a7230\",\"paramType\":[\"integer[]\",\"integer\"],\"returnType\":\"integer[]\",\"isAnswer\":false}"
+
+
+# CodeSnippets
+## Updating Code
+UPDATE "CodeSnippets"
+SET code = $$class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        // your code here
+        return new int[]{};
+    }
+}$$
+WHERE id = '74dea1de-d652-41be-b78f-b1b1b5baaff5';

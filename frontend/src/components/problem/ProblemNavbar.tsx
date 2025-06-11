@@ -3,7 +3,13 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, CloudUpload, List, SquareChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export function ProblemNavbar() {
+interface ProblemNavbarProps {
+  handleSubmission: () => void;
+  token: string | null;
+}
+
+export function ProblemNavbar({ handleSubmission, token }: Readonly<ProblemNavbarProps>) {
+  
   return (
     <div className="px-8 h-12 w-full flex items-center relative">
       <div className="flex items-center gap-2">
@@ -34,6 +40,8 @@ export function ProblemNavbar() {
           size={null}
           variant="ghost"
           className="p-1.5 font-light bg-zinc-200 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:ring-1 hover:ring-zinc-400"
+          disabled={ token === null }
+          onClick={handleSubmission}
         >
           <SquareChevronRight style={{ width: "20", height: "20px" }} />
         </Button>
@@ -41,6 +49,7 @@ export function ProblemNavbar() {
           size={null}
           variant="ghost"
           className="py-1 px-2 text-[#0acd00] ml-2 text-md bg-zinc-200 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:ring-1 hover:ring-zinc-400 hover:text-green-600"
+          disabled={ token === null }
         >
           <CloudUpload style={{ width: "20", height: "20" }} />
           Submit

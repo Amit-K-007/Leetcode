@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/table"
 import { Search } from "lucide-react"
 import { ProblemRow } from "./ProblemRow"
+import axios from "axios"
+import { debounce } from "@/lib/debounce"
 
 interface Problem {
   id: number
@@ -20,61 +22,63 @@ interface Problem {
   hasSolved?: boolean
 }
 
-const hardcodedProblems: Problem[] = [
-  { id: 1, title: "Two Sum", titleSlug: "two-sum", difficulty: "Easy", hasSolved: false },
-  { id: 2, title: "Add Two Numbers", titleSlug: "add-two-numbers", difficulty: "Med.", hasSolved: true },
-  { id: 3, title: "Longest Substring Without Repeating Characters", titleSlug: "longest-substring-without-repeating-characters", difficulty: "Med.", hasSolved: true },
-  { id: 4, title: "Median of Two Sorted Arrays", titleSlug: "median-of-two-sorted-arrays", difficulty: "Hard" },
-  { id: 5, title: "Valid Parentheses", titleSlug: "valid-parentheses", difficulty: "Easy", hasSolved: false },
-]
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function ProblemList() {
   const [problems, setProblems] = useState<Problem[]>([])
   const [search, setSearch] = useState("")
+  const [inputValue, setInputValue] = useState("")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const fetchProblems = async () => {
-      // setLoading(true)
-      // const res = await fetch(`/api/problems?page=${page}&search=${search}`)
-      // const result = await res.json()
-      // setProblems(result.data)
-      // setTotalPages(result.totalPages)
-      // setLoading(false)
+      setLoading(true);
+      try {
+        const res = await axios.get(`${API_URL}/problemset`, {
+          params: {
+            page,
+            search,
+          },
+        });
+  
+        const fetchedProblems: Problem[] = res.data.data.map((problem: Problem) => ({
+          id: problem.id,
+          title: problem.title,
+          titleSlug: problem.titleSlug,
+          difficulty: problem.difficulty, 
+          hasSolved: null, 
+        }));
+  
+        setProblems(fetchedProblems);
+        setTotalPages(res.data.totalPages);
+      } catch (error) {
+        console.error("Error fetching problems:", error);
+        setProblems([]);
+        setTotalPages(1);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      setLoading(true)
-
-      // Simulate API delay
-      // await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Filter and paginate hardcoded data here:
-      const filtered = hardcodedProblems.filter((p) =>
-        p.title.toLowerCase().includes(search.toLowerCase())
-      )
-
-      // Pagination variables
-      const limit = 5
-      const total = filtered.length
-      const totalPages = Math.max(1, Math.ceil(total / limit))
-      const adjustedPage = Math.min(Math.max(1, page), totalPages)
-      const start = (adjustedPage - 1) * limit
-      const paginated = filtered.slice(start, start + limit)
-
-      setProblems(paginated)
-      setTotalPages(totalPages)
-      setLoading(false)
-    }
-
-    fetchProblems()
+    fetchProblems();
   }, [page, search])
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value)
-    setPage(1) // Reset to first page on new search
-  }
-  
+  const handleSearch = useMemo(() =>
+    debounce((value: string) => {
+      setSearch(value);
+      setPage(1);
+    }, 1000),
+    []
+  );
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value); 
+    setLoading(true);
+    handleSearch(value);
+  };
 
   return (
     <div className="space-y-4 mt-2">
@@ -85,8 +89,8 @@ export function ProblemList() {
         />
         <Input
             placeholder="Search problems..."
-            value={search}
-            onChange={handleSearch}
+            value={inputValue}
+            onChange={handleInputChange}
             className="pl-9"
         />
       </div>

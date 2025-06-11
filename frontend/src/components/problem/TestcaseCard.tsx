@@ -1,48 +1,57 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function TestcaseCard() {
-  const initialTestCases = [
-    { nums: [2, 7, 11, 15], target: 9 },
-    { nums: [3, 2, 4], target: 6 },
-    { nums: [3, 3], target: 6 },
-  ];
+interface TestCase {
+  input: string;
+  output: string;
+}
 
-  const [testCases, setTestCases] = useState(initialTestCases);
+interface TestcaseCardProps {
+  testCases: TestCase[];
+  setTestCases: (testCases: TestCase[]) => void;
+  variableNames: string[];
+}
+
+export function TestcaseCard({
+  testCases,
+  setTestCases,
+  variableNames,
+}: Readonly<TestcaseCardProps>) {
+  console.log(variableNames);
   const [activeTab, setActiveTab] = useState(0);
 
+  useEffect(() => {
+    setActiveTab(0);
+  }, [testCases]);
+
+  const updateTestCases = (newCases: TestCase[]) => {
+    setTestCases(newCases);
+  };
+
   const addTestCase = () => {
-    setTestCases([...testCases, { nums: [], target: 0 }]);
+    const emptyInput = variableNames.map(() => "").join("\n");
+    updateTestCases([...testCases, { input: emptyInput, output: "" }]);
     setActiveTab(testCases.length);
   };
 
   const removeTestCase = (index: number) => {
     if (testCases.length <= 1) return;
-    const newTestCases = testCases.filter((_, i) => i !== index);
-    setTestCases(newTestCases);
-    setActiveTab(Math.min(activeTab, newTestCases.length - 1));
+    const newCases = testCases.filter((_, i) => i !== index);
+    updateTestCases(newCases);
+    setActiveTab(Math.min(activeTab, newCases.length - 1));
   };
 
-  // Handle nums input change
-  const handleNumsChange = (value: string) => {
-    const newTestCases = [...testCases];
-    // Parse the input string into an array of numbers
-    const nums = value
-      .split(",")
-      .map((num) => parseInt(num.trim()))
-      .filter((num) => !isNaN(num)); // Filter out invalid numbers
-    newTestCases[activeTab].nums = nums;
-    setTestCases(newTestCases);
+  const handleInputChange = (lineIndex: number, value: string) => {
+    const currentLines = testCases[activeTab].input.split("\n");
+    currentLines[lineIndex] = value;
+    const newInput = currentLines.join("\n");
+    const updatedCases = [...testCases];
+    updatedCases[activeTab].input = newInput;
+    updateTestCases(updatedCases);
   };
 
-  // Handle target input change
-  const handleTargetChange = (value: string) => {
-    const newTestCases = [...testCases];
-    const target = parseInt(value);
-    newTestCases[activeTab].target = isNaN(target) ? 0 : target; // Default to 0 if invalid
-    setTestCases(newTestCases);
-  };
+  const inputLines = testCases[activeTab]?.input?.split("\n") || [];
 
   return (
     <div className="flex flex-col gap-4 p-4 h-[calc(100%-3rem)] overflow-auto">
@@ -61,7 +70,6 @@ export function TestcaseCard() {
             >
               Case {index + 1}
             </Button>
-
             {testCases.length > 1 && (
               <button
                 onClick={() => removeTestCase(index)}
@@ -83,24 +91,19 @@ export function TestcaseCard() {
           </Button>
         )}
       </div>
-
-      <div >
-        <p className="text-sm font-medium opacity-50 mb-2">nums =</p>
-        <input
-          type="text"
-          value={testCases[activeTab].nums.join(",")}
-          onChange={(e) => handleNumsChange(e.target.value)}
-          className="w-full text-sm py-2 px-3 bg-zinc-100 rounded-md mb-4 border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-400"
-          placeholder="Enter numbers (e.g., 2,7,11,15)"
-        />
-        <p className="text-sm font-medium opacity-50 mb-2">target =</p>
-        <input
-          type="text"
-          value={testCases[activeTab].target}
-          onChange={(e) => handleTargetChange(e.target.value)}
-          className="w-full text-sm px-3 py-2 bg-zinc-100 rounded-md border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-400"
-          placeholder="Enter target (e.g., 9)"
-        />
+      <div>
+        {variableNames.map((varName, idx) => (
+          <div key={idx} className="mb-4">
+            <p className="text-sm font-medium opacity-50 mb-2">{varName} =</p>
+            <input
+              type="text"
+              value={inputLines[idx] || ""}
+              onChange={(e) => handleInputChange(idx, e.target.value)}
+              className="w-full text-sm py-2 px-3 bg-zinc-100 rounded-md border border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+              placeholder={`Enter value for ${varName}`}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

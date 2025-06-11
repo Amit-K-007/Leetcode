@@ -1,23 +1,42 @@
 import Editor from "@monaco-editor/react";
 
-interface CodeEditorProps {
+interface CodeSnippets {
+  language: string;
   code: string;
-  setCode: (val: string) => void;
-  language?: string;
+}
+interface CodeEditorProps {
+  codeSnippets: CodeSnippets[];
+  setCodeSnippets: (val: CodeSnippets[]) => void;
+  selectedLanguage: string;
 }
 
 export function CodeEditor({
-  code,
-  setCode,
-  language = "cpp",
+  codeSnippets,
+  setCodeSnippets,
+  selectedLanguage,
 }: Readonly<CodeEditorProps>) {
+  const currentSnippet = codeSnippets.find(
+    (snippet) => snippet.language === selectedLanguage
+  );
+   const handleCodeChange = (val: string | undefined) => {
+    if (val === undefined) return;
+    console.log(val);
+
+    setCodeSnippets(
+      codeSnippets.map((snippet) =>
+        snippet.language === selectedLanguage
+          ? { ...snippet, code: val }
+          : snippet
+      )
+    );
+  };
   return (
     <Editor
       height="100%"
-      language={language}
-      value={code}
+      language={selectedLanguage.toLowerCase()}
+      value={currentSnippet?.code ?? ""}
       theme="vs-light"
-      onChange={(val) => setCode(val ?? "")}
+      onChange={handleCodeChange}
       options={{
         fontSize: 14,
         minimap: { enabled: false },

@@ -33,13 +33,19 @@ export function ProblemRow({ problem }: Readonly<ProblemRowProps>) {
       </TableCell>
       <TableCell 
         className={
-          problem.difficulty === "Easy"
+          problem.difficulty === "EASY"
             ? "text-green-600 pr-6"
-            : problem.difficulty === "Med."
+            : problem.difficulty === "MEDIUM"
             ? "text-yellow-500 pr-6"
             : "text-red-600 pr-6"
         }
-      >{problem.difficulty}</TableCell>
+      >
+        {problem.difficulty === "EASY"
+          ? "Easy"
+          : problem.difficulty === "MEDIUM"
+          ? "Med."
+          : "High"}
+    </TableCell>
     </TableRow>
   );
 }

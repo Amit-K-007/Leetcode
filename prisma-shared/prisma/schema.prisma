@@ -18,18 +18,20 @@ model User {
 }
 
 model Problem {
-  id           Int          @id @default(autoincrement())
+  id           Int            @id @default(autoincrement())
   title        String
-  titleSlug    String       @unique
+  titleSlug    String         @unique
   description  String
   difficulty   Difficulty
   testCases    TestCase[]
   submissions  Submission[]
-  createdAt    DateTime     @default(now())
+  createdAt    DateTime       @default(now())
   paramType    String[]
+  paramName    String[]       @default([])
   returnType   String
   systemCode   String
   functionName String
+  codeSnippets CodeSnippets[]
 }
 
 model TestCase {
@@ -55,6 +57,15 @@ model Submission {
   createdAt        DateTime         @default(now())
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+}
+
+model CodeSnippets {
+  id        String   @id @default(uuid())
+  problemId Int
+  language  Language
+  code      String
+
   problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 }
 

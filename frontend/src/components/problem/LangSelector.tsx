@@ -5,12 +5,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
 
-type Language = "cpp" | "python" | "java";
+type Language = "CPP" | "PYTHON" | "JAVA";
 
-export function LangSelector() {
-  const [language, setLanguage] = useState<Language>("cpp");
+interface LangSelectorProps {
+  language: string;
+  setLanguage: (val: Language) => void;
+}
+
+
+export function LangSelector({ language, setLanguage}: Readonly<LangSelectorProps>) {
 
   return (
     <Select
@@ -21,9 +25,9 @@ export function LangSelector() {
         <SelectValue placeholder="Select language" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="cpp">C++</SelectItem>
-        <SelectItem value="python">Python</SelectItem>
-        <SelectItem value="java">Java</SelectItem>
+        <SelectItem value="CPP">C++</SelectItem>
+        <SelectItem value="PYTHON">Python</SelectItem>
+        <SelectItem value="JAVA">Java</SelectItem>
       </SelectContent>
     </Select>
   );

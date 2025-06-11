@@ -4,27 +4,107 @@ import { ProblemNavbar } from "@/components/problem/ProblemNavbar";
 import { TestcaseCard } from "@/components/problem/TestcaseCard";
 import { TestcaseNavbar } from "@/components/problem/TestcaseNavbar";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import axios from "axios";
 import { BookText, CircleFadingArrowUp, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Outlet, useParams } from "react-router-dom";
 import Split from 'react-split'
 
+interface TestCase {
+  input: string;
+  output: string;
+}
+
+interface CodeSnippets {
+  language: string;
+  code: string;
+}
+
+interface ProblemData {
+  id: number;
+  title: string;
+  description: string;
+  difficulty: string;
+  functionName: string;
+  testCases: TestCase[];
+  codeSnippets: CodeSnippets[];
+  paramName: string[];
+}
+
+interface ProblemInfo {
+  id: number | null;
+  title: string | null;
+  description: string | null;
+  functionName: string | null;
+}
+
+type Language = "CPP" | "PYTHON" | "JAVA";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function Problem() {
+  
   const { slug } = useParams<{ slug: string }>();
-  const [code, setCode] = useState<string>(
-    `class Solution {
-  public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-          
-  }
-};
-    `
-  );
+  const { token } = useAuth();
+  const [problemInfo, setProblemInfo] = useState<ProblemInfo>({ id: null, title: null, description: null, functionName: null });
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+  const [codeSnippets, setCodeSnippets] = useState<CodeSnippets[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [language, setLanguage] = useState<Language>("CPP");
+  const [paramName, setParamName] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchProblemData = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get<{ data: ProblemData }>(`${API_URL}/problems/${slug}`);
+        const problemData = res.data.data;
+
+        setProblemInfo({
+          id: problemData.id,
+          title: problemData.title,
+          description: problemData.description,
+          functionName: problemData.functionName,
+        });
+        setTestCases(problemData.testCases);
+        setCodeSnippets(problemData.codeSnippets);
+        setParamName(problemData.paramName);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProblemData();
+  }, [slug]);
+
+  const handleSubmission = async () => {
+    setLoading(true);
+    try {
+      await axios.post(`${API_URL}/problems/${slug}/interpret_solution`, {
+        questionId: problemInfo.id?.toString(),
+        language: language,
+        dataInput: testCases
+          .map(tc => `${tc.input.trim()}`)
+          .join("\n"),
+        userCode: codeSnippets.find(s => s.language === language)?.code,
+      }, {
+        headers: {
+          Authorization: token,
+        }
+      });
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="h-screen w-screen bg-zinc-100 flex flex-col">
-      <ProblemNavbar />
+      <ProblemNavbar handleSubmission={handleSubmission} token={token}/>
 
       <Split
         className="flex flex-1 pb-4 h-[calc(100%-3rem)]"
@@ -51,7 +131,10 @@ export function Problem() {
                 <span className="ml-1">Submissions</span>
               </Link>
             </div>
-            <Outlet />
+            <Outlet context={{
+              ...problemInfo,
+              loading
+            }}/>
           </div>
         </div>
         
@@ -65,13 +148,13 @@ export function Problem() {
           <div className="pb-1">
             <div className="pb-4 flex flex-col bg-white border border-zinc-300 rounded-xl h-full overflow-hidden">
               <div className="px-4 flex items-center justify-between mb-4 bg-zinc-50 border-b border-zinc-200 h-12">
-                <LangSelector />
+                <LangSelector language={language} setLanguage={setLanguage}/>
                 <Button size="icon" variant="ghost">
                   <RotateCcw />
                 </Button>
               </div>
               <div className="grow overflow-hidden">
-                <CodeEditor code={code} setCode={setCode} language="cpp" />
+                <CodeEditor codeSnippets={codeSnippets} setCodeSnippets={setCodeSnippets} selectedLanguage={language} />
               </div>
             </div>
           </div>
@@ -79,7 +162,7 @@ export function Problem() {
           <div className="pt-1">
             <div className="bg-white border border-zinc-300 rounded-xl h-full overflow-hidden">
               <TestcaseNavbar />
-              <TestcaseCard />
+              <TestcaseCard variableNames={paramName} testCases={testCases} setTestCases={setTestCases} />
             </div>
           </div>
         </Split>
