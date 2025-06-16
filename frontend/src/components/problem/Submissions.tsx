@@ -60,10 +60,10 @@ export function Submissions() {
               <TableRow key={index}>
                 <TableCell className="text-gray-600 font-medium">{index + 1}</TableCell>
                 <TableCell
-                  className={`capitalize cursor-pointer ${submission.status === "Accepted" ? "text-green-600" : "text-red-600"}`}
+                  className={`capitalize cursor-pointer ${submission.status === "ACCEPTED" ? "text-green-600" : "text-red-600"}`}
                   onClick={() => { navigate(`${submission.id}`) }}
                 >
-                  {submission.status.replace("_", " ").toLowerCase()}
+                  {submission.status.replace(/_/g, " ").toLowerCase()}
                 </TableCell>
                 <TableCell className="text-gray-600">{submission.language}</TableCell>
                 <TableCell>

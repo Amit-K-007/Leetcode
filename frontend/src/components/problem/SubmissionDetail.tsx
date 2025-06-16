@@ -56,8 +56,8 @@ export function SubmissionDetail() {
       {submissionDetail ? (
       <div className="flex flex-col">
         <div className="flex gap-3 items-center">
-          <span className={`capitalize text-lg font-bold ${submissionDetail.status === "Accepted" ? "text-green-600" : "text-red-600"}`}>
-            {submissionDetail.status.replace("_", " ").toLowerCase()}
+          <span className={`capitalize text-lg font-bold ${submissionDetail.status === "ACCEPTED" ? "text-green-600" : "text-red-600"}`}>
+            {submissionDetail.status.replace(/_/g, " ").toLowerCase()}
           </span>
           <span className="text-sm opacity-50">
             {submissionDetail.correctTestCases} / {submissionDetail.totalTestCases} testcases passed

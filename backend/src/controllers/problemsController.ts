@@ -173,6 +173,9 @@ export async function getSubmissions(req: AuthRequest, res: Response): Promise<v
                 language: true,
                 executionTime: true,
                 executionMemory: true,
+            },
+            orderBy: {
+                createdAt: "asc",
             }
         });
         if(submissions.length === 0) {

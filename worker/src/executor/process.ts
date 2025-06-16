@@ -23,8 +23,8 @@ export async function validateTestCases(
             "Number of test case lines does not match paramType length"
         );
     }
-    if (validate) {
-        for (let i = 0; i < testcases.length; i++) {
+    for (let i = 0; i < testcases.length; i++) {
+        if (validate) {
             const j = i % paramType.length;
             try {
                 testcases[i] = validateField(testcases[i], paramType[j]);
@@ -42,6 +42,9 @@ export async function validateTestCases(
                         .join("\n")
                 );
             }
+        }
+        else {
+            testcases[i] = testcases[i].replace(/[\[\]]/g, "").replace(/,/g, " ");
         }
     }
     return { testcases, totalTestCases: testcases.length / paramType.length };
@@ -206,6 +209,9 @@ export async function processSubmission(
             paramType,
             true
         );
+        console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
+        console.log(testcases)
+        console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
         result.totalTestCases = totalTestCases;
 
         const userWrappedCode = userHandler.wrapCode(
@@ -321,6 +327,9 @@ export async function processAnswer(
             paramType,
             false
         );
+        console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
+        console.log(testcases)
+        console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n")
         result.totalTestCases = totalTestCases;
 
         const expectedOutputs = systemCode
