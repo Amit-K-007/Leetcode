@@ -1,5 +1,5 @@
 import { Menu } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -9,6 +9,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import appLogo from "@/assets/darkLogo.png";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MenuItem {
   title: string;
@@ -51,6 +52,9 @@ const Navbar = ({
     signup: { title: "Sign up", url: "/signup" },
   },
 }: NavbarProps) => {
+  const location = useLocation();
+  const { token, setToken } = useAuth();
+
   return (
     <section className="py-4">
       {/* Desktop Menu */}
@@ -75,12 +79,22 @@ const Navbar = ({
           </div>
         </div>
         <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link to={auth.login.url}>{auth.login.title}</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link to={auth.signup.url}>{auth.signup.title}</Link>
-          </Button>
+          {token === null ?
+            <>
+              <Button asChild variant="outline" size="sm">
+                <Link to={auth.login.url} state={{ from: location.pathname }}>{auth.login.title}</Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link to={auth.signup.url} state={{ from: location.pathname }}>{auth.signup.title}</Link>
+              </Button>
+            </> :
+            <Button size="sm" onClick={() => {
+              setToken(null);
+              localStorage.removeItem("token");
+            }}>
+              Sign out
+            </Button>
+          }
         </div>
       </nav>
 
@@ -118,12 +132,22 @@ const Navbar = ({
                   </Link>
                 ))}
                 <div className="flex flex-col gap-3 pt-4">
-                  <Button asChild variant="outline">
-                    <Link to={auth.login.url}>{auth.login.title}</Link>
+                {token === null ? 
+                  <>
+                    <Button asChild variant="outline">
+                      <Link to={auth.login.url} state={{ from: location.pathname }}>{auth.login.title}</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link to={auth.signup.url} state={{ from: location.pathname }}>{auth.signup.title}</Link>
+                    </Button>
+                  </> :
+                  <Button  onClick={() => {
+                    setToken(null);
+                    localStorage.removeItem("token");
+                  }}>
+                    Sign out
                   </Button>
-                  <Button asChild>
-                    <Link to={auth.signup.url}>{auth.signup.title}</Link>
-                  </Button>
+                }
                 </div>
               </div>
             </SheetContent>

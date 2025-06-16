@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import googleLogo from "@/assets/google.svg"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { CardLogo } from "@/components/common/CardLogo"
 import { useState, type FormEvent } from "react"
 import axios from "axios"
@@ -26,11 +26,14 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const location = useLocation();
+  console.log(location.state?.from);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
+    const from = location.state?.from ?? '/';
     
     try {
       const response = await axios.post(`${API_URL}/accounts/login`, { email, password });
@@ -39,7 +42,7 @@ export function Login() {
       setToken(token);
       localStorage.setItem("token", token);
 
-      navigate("/");
+      navigate(from);
     } catch (err) {
       setError(
         axios.isAxiosError(err) && err.response?.data?.message

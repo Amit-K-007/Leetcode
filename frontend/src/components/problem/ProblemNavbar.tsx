@@ -1,15 +1,21 @@
 import { CardLogo } from "@/components/common/CardLogo";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, CloudUpload, List, SquareChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipTrigger,  }  from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
+import { ChevronLeft, ChevronRight, CloudUpload, List, LoaderIcon, SquareChevronRight } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 interface ProblemNavbarProps {
   handleSubmission: () => void;
-  token: string | null;
+  handleAnswer: () => void;
+  runningCode: boolean;
+  submittingAnswer: boolean;
 }
 
-export function ProblemNavbar({ handleSubmission, token }: Readonly<ProblemNavbarProps>) {
-  
+export function ProblemNavbar({ handleSubmission, handleAnswer, runningCode, submittingAnswer }: Readonly<ProblemNavbarProps>) {
+  const location = useLocation();
+  const { token, setToken } = useAuth();
+
   return (
     <div className="px-8 h-12 w-full flex items-center relative">
       <div className="flex items-center gap-2">
@@ -36,33 +42,90 @@ export function ProblemNavbar({ handleSubmission, token }: Readonly<ProblemNavba
         </Link>
       </div>
       <div className="absolute left-1/2 -translate-x-1/2">
-        <Button
-          size={null}
-          variant="ghost"
-          className="p-1.5 font-light bg-zinc-200 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:ring-1 hover:ring-zinc-400"
-          disabled={ token === null }
-          onClick={handleSubmission}
-        >
-          <SquareChevronRight style={{ width: "20", height: "20px" }} />
-        </Button>
-        <Button
-          size={null}
-          variant="ghost"
-          className="py-1 px-2 text-[#0acd00] ml-2 text-md bg-zinc-200 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:ring-1 hover:ring-zinc-400 hover:text-green-600"
-          disabled={ token === null }
-        >
-          <CloudUpload style={{ width: "20", height: "20" }} />
-          Submit
-        </Button>
+        {token === null ? (
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                size={null}
+                variant="ghost"
+                className="p-1.5 font-light bg-zinc-200 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:ring-1 hover:ring-zinc-400"
+                disabled
+              >
+                <SquareChevronRight style={{ width: "20", height: "20px" }} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Please login to Run code</p>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            size={null}
+            variant="ghost"
+            className="p-1.5 font-light bg-zinc-200 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:ring-1 hover:ring-zinc-400"
+            onClick={handleSubmission}
+          >
+            {runningCode ? 
+              <LoaderIcon className="animate-spin" /> 
+            :
+              <SquareChevronRight style={{ width: "20", height: "20px" }} />
+            }
+          </Button>
+        )}
+
+        {/* Second Button - Submit */}
+        {token === null ? (
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                size={null}
+                variant="ghost"
+                className="py-1 px-2 text-[#0acd00] ml-2 text-md bg-zinc-200 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:ring-1 hover:ring-zinc-400 hover:text-green-600"
+                disabled
+              >
+                <CloudUpload style={{ width: "20", height: "20" }} />
+                Submit
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Please login to Submit code</p>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            size={null}
+            variant="ghost"
+            className="py-1 px-2 text-[#0acd00] ml-2 text-md bg-zinc-200 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:ring-1 hover:ring-zinc-400 hover:text-green-600"
+            onClick={handleAnswer}
+          >
+            {submittingAnswer ? 
+              <LoaderIcon className="animate-spin" /> 
+            :
+              <CloudUpload style={{ width: "20", height: "20" }} />
+            }
+            Submit
+          </Button>
+        )}
       </div>
+
       <div className="ml-auto flex gap-2 text-md font-light">
-        <Link to="/signup" className="hover:font-normal ">
-          Register
-        </Link>
-        or
-        <Link to="/login" className="hover:font-normal">
-          Sign in
-        </Link>
+      {token === null ? 
+        <>
+          <Link to="/signup" className="hover:font-normal" state={{ from: location.pathname }}>
+            Register
+          </Link>
+          or
+          <Link to="/login" className="hover:font-normal" state={{ from: location.pathname }}>
+            Sign in
+          </Link>
+        </> :
+        <Button size="sm" onClick={() => {
+          setToken(null);
+          localStorage.removeItem("token");
+        }}>
+          Sign out
+        </Button>
+      }
       </div>
     </div>
   );

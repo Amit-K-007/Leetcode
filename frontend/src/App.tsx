@@ -8,6 +8,7 @@ import { Problem } from "./pages/Problem"
 import { Description } from "./components/problem/Description"
 import { Submissions } from "./components/problem/Submissions"
 import "@/styles/App.css";
+import { SubmissionDetail } from "./components/problem/SubmissionDetail"
 
 function App() {
 
@@ -22,6 +23,7 @@ function App() {
         <Route index element={<Description />} />
         <Route path="description" element={<Description />} />
         <Route path="submissions" element={<Submissions />} />
+        <Route path="submissions/:submissionId" element={<SubmissionDetail />} />
       </Route>
     </Routes>
   )

@@ -7,7 +7,7 @@ import { AuthProvider } from './context/AuthContext.tsx'
 import { SocketProvider } from './context/SocketContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  // <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <SocketProvider>
@@ -15,5 +15,5 @@ createRoot(document.getElementById('root')!).render(
         </SocketProvider>
       </AuthProvider>
     </BrowserRouter>
-  </StrictMode>,
+  // </StrictMode>,
 )

@@ -11,6 +11,7 @@ import dockerLogo from "@/assets/docker-color.svg";
 import redisLogo from "@/assets/redis-color.svg";
 import socketioLogo from "@/assets/socketdotio-color.svg";
 import squarePattern from "@/assets/square-alt-grid.svg";
+import { useNavigate } from "react-router-dom";
 
 const techStack1 = [
   { src: typescriptLogo, alt: "Typescript" },
@@ -24,6 +25,8 @@ const techStack1 = [
 ]
 
 export function Hero() {
+  const navigate = useNavigate();
+
   return (
     <section className="relative overflow-hidden py-32">
       <div className="absolute inset-x-0 top-0 flex h-full w-full items-center justify-center opacity-100">
@@ -53,7 +56,10 @@ export function Hero() {
               </p>
             </div>
             <div className="mt-6 flex justify-center gap-3">
-              <Button className="shadow-sm transition-shadow hover:shadow">
+              <Button 
+                className="shadow-sm transition-shadow hover:shadow"
+                onClick={() => navigate("/problemset")}
+              >
                 Start Solving
               </Button>
               <a

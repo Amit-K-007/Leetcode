@@ -3,13 +3,14 @@ import { LangSelector } from "@/components/problem/LangSelector";
 import { ProblemNavbar } from "@/components/problem/ProblemNavbar";
 import { TestcaseCard } from "@/components/problem/TestcaseCard";
 import { TestcaseNavbar } from "@/components/problem/TestcaseNavbar";
+import { TestcaseResults } from "@/components/problem/TestcaseResults";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useSocket } from "@/hooks/useSocket";
 import axios from "axios";
 import { BookText, CircleFadingArrowUp, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, Outlet, useParams } from "react-router-dom";
+import { Link, Outlet, useNavigate, useParams } from "react-router-dom";
 import Split from 'react-split'
 
 interface TestCase {
@@ -40,6 +41,43 @@ interface ProblemInfo {
   functionName: string | null;
 }
 
+export interface ExecutionResult {
+  submissionId: string;
+  userId: string;
+  questionId: string;
+  status: Status;
+  code_answer: string[];
+  std_output_list: string[];
+  expected_code_answer: string[];
+  execution_time: string[];
+  execution_memory: string[];
+  correctTestCases: number;
+  totalTestCases: number;
+  lastTestCase?: LastTestCase;
+  isAnswer: boolean;
+  error?: string;
+  errors?: string[];
+}
+
+export interface LastTestCase {
+  number: number;
+  input: string;
+  output?: string;
+  expectedOutput?: string;
+  status: Status;
+  error?: string;
+}
+
+type Status =
+  | 'success'
+  | 'error'
+  | 'timeout'
+  | 'runtime_error'
+  | 'internal_error'
+  | 'compilation_error'
+  | 'wrong_answer'
+  | 'memory_limit_exceeded';
+
 type Language = "CPP" | "PYTHON" | "JAVA";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -48,12 +86,20 @@ export function Problem() {
   const { slug } = useParams<{ slug: string }>();
   const { token } = useAuth();
   const { socket } = useSocket();
+  const navigate = useNavigate();
   const [problemInfo, setProblemInfo] = useState<ProblemInfo>({ id: null, title: null, description: null, functionName: null });
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [codeSnippets, setCodeSnippets] = useState<CodeSnippets[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [initialCodeSnippets, setInitialCodeSnippets] = useState<CodeSnippets[]>([]);
   const [language, setLanguage] = useState<Language>("CPP");
   const [paramName, setParamName] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [executionResult, setExecutionResult] = useState<ExecutionResult | null>(null);
+  const [testcaseView, setTestcaseView] = useState<'testcase' | 'results'>('testcase');
+  const [activeTab, setActiveTab] = useState(0);
+  const [runningCode, setRunningCode] = useState(false);
+  const [submittingAnswer, setSubmittingAnswer] = useState(false); 
 
   useEffect(() => {
     const fetchProblemData = async () => {
@@ -70,6 +116,7 @@ export function Problem() {
         });
         setTestCases(problemData.testCases);
         setCodeSnippets(problemData.codeSnippets);
+        setInitialCodeSnippets(problemData.codeSnippets);
         setParamName(problemData.paramName);
       } catch (error) {
         console.log(error);
@@ -84,8 +131,23 @@ export function Problem() {
   useEffect(() => {
     if(!socket) return;
 
-    const handleResult = (data: any) => {
-      console.log("Result received:", data);
+    const handleResult = (data: string) => {
+      setSubmittingAnswer(false);
+      setRunningCode(false);
+      const result = JSON.parse(data) as ExecutionResult;
+      console.log(result);
+      if(result.isAnswer) {
+        navigate(`/problems/${slug}/submissions/${result.submissionId}`);
+      } else {
+        setExecutionResult(result);
+        setTestcaseView('results');
+        if (
+          result.lastTestCase &&
+          !['success', 'wrong_answer'].includes(result.status)
+        ) {
+          setActiveTab(result.lastTestCase.number);
+        }
+      }
     };
 
     socket.on("result", handleResult);
@@ -93,34 +155,72 @@ export function Problem() {
     return () => {
       socket.off("result", handleResult);
     };
-  }, [socket]);
+  }, [navigate, slug, socket]);
 
   const handleSubmission = async () => {
-    setLoading(true);
+    setRunningCode(true);
+    setTestcaseView('results');
+    setError(null);
     try {
+      const userCode = codeSnippets.find((s) => s.language === language)?.code;
+      if (!userCode || !problemInfo.id) {
+        setError('Invalid code or problem ID');
+        return;
+      }
       await axios.post(`${API_URL}/problems/${slug}/interpret_solution`, {
-        questionId: problemInfo.id?.toString(),
+        questionId: problemInfo.id.toString(),
         language: language,
-        dataInput: testCases
-          .map(tc => `${tc.input.trim()}`)
-          .join("\n"),
-        userCode: codeSnippets.find(s => s.language === language)?.code,
+        dataInput: testCases.map((tc) => tc.input.trim()).join('\n'),
+        userCode,
       }, {
         headers: {
           Authorization: token,
         }
       });
     } catch (error) {
+      setError('Submission failed. Please try again.');
       console.log(error);
-    } finally {
-      setLoading(false);
+      setRunningCode(false);
     }
+  };
+
+  const handleAnswer = async () => {
+    setSubmittingAnswer(true);
+    setError(null);
+    try {
+      const userCode = codeSnippets.find((s) => s.language === language)?.code;
+      if (!userCode || !problemInfo.id) {
+        setError('Invalid code or problem ID');
+        return;
+      }
+      await axios.post(`${API_URL}/problems/${slug}/submit`, {
+        questionId: problemInfo.id.toString(),
+        language: language,
+        userCode,
+      }, {
+        headers: {
+          Authorization: token,
+        }
+      });
+    } catch (error) {
+      setError('Submission failed. Please try again.');
+      console.log(error);
+      setSubmittingAnswer(false);
+    }
+  };
+
+  const handleResetCode = () => {
+    setCodeSnippets(initialCodeSnippets);
   };
 
   return (
     <div className="h-screen w-screen bg-zinc-100 flex flex-col">
-      <ProblemNavbar handleSubmission={handleSubmission} token={token}/>
-
+      <ProblemNavbar 
+        handleSubmission={handleSubmission} 
+        handleAnswer={handleAnswer} 
+        runningCode={runningCode} 
+        submittingAnswer={submittingAnswer}  
+      />
       <Split
         className="flex flex-1 pb-4 h-[calc(100%-3rem)]"
         sizes={[50, 50]}
@@ -164,20 +264,44 @@ export function Problem() {
             <div className="pb-4 flex flex-col bg-white border border-zinc-300 rounded-xl h-full overflow-hidden">
               <div className="px-4 flex items-center justify-between mb-4 bg-zinc-50 border-b border-zinc-200 h-12">
                 <LangSelector language={language} setLanguage={setLanguage}/>
-                <Button size="icon" variant="ghost">
+                <Button size="icon" variant="ghost" onClick={handleResetCode}>
                   <RotateCcw />
                 </Button>
               </div>
               <div className="grow overflow-hidden">
-                <CodeEditor codeSnippets={codeSnippets} setCodeSnippets={setCodeSnippets} selectedLanguage={language} />
+                <CodeEditor 
+                  codeSnippets={codeSnippets} 
+                  setCodeSnippets={setCodeSnippets} 
+                  selectedLanguage={language} 
+                  loading={loading}
+                  error={error}
+                  initialCodeSnippets={initialCodeSnippets}
+                />
               </div>
             </div>
           </div>
 
           <div className="pt-1">
             <div className="bg-white border border-zinc-300 rounded-xl h-full overflow-hidden">
-              <TestcaseNavbar />
-              <TestcaseCard variableNames={paramName} testCases={testCases} setTestCases={setTestCases} />
+              <TestcaseNavbar activeView={testcaseView} setActiveView={setTestcaseView}/>
+              {testcaseView === "testcase" ? (
+                <TestcaseCard 
+                  variableNames={paramName} 
+                  testCases={testCases} 
+                  setTestCases={setTestCases} 
+                  loading={loading}
+                  error={error}
+                />
+              ) : (
+                <TestcaseResults
+                  testCases={testCases}
+                  executionResult={executionResult}
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  loading={runningCode}
+                  variableNames={paramName}
+                />
+              )}
             </div>
           </div>
         </Split>
