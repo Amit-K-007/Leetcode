@@ -156,3 +156,67 @@ export async function submitSolution(req: AuthRequest, res: Response): Promise<v
         });
     }
 }
+
+export async function getSubmissions(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const { problemSlug } = req.params;
+        const submissions = await prisma.submission.findMany({
+            where: {
+                userId: req.user?.userId,
+                problem: {
+                    titleSlug: problemSlug,
+                },
+            },
+            select: {
+                id: true,
+                status: true,
+                language: true,
+                executionTime: true,
+                executionMemory: true,
+            }
+        });
+        if(submissions.length === 0) {
+            res.status(200).json({
+                message: `Submissions not available for ${problemSlug}`,
+            });
+            return;
+        }
+
+        res.status(200).json({
+            submissions,
+        });
+    } 
+    catch(error) {
+        console.log(error);
+        res.status(500).json({
+            message: 'Internal server error',
+        });
+    }
+}
+
+export async function getSubmissionDetail(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const { submissionId } = req.params;
+        const submissionDetail = await prisma.submission.findUnique({
+            where: {
+                id: submissionId,
+            }
+        });
+        if(!submissionDetail) {
+            res.status(400).json({
+                message: "Submissions details not found",
+            });
+            return;
+        }
+
+        res.status(200).json({
+            submissionDetail,
+        });
+    } 
+    catch(error) {
+        console.log(error);
+        res.status(500).json({
+            message: 'Internal server error',
+        });
+    }
+}
