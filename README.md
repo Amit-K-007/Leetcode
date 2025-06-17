@@ -1,11 +1,4 @@
-<p align="center">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/1/19/LeetCode_logo_black.png" alt="LeetCode Logo" height="80" />
-</p>
-
-<h1 align="center">LeetCode Clone</h1>
-<p align="center"><i>Code. Test. Learn. Repeat.</i></p>
-
----
+<h1 style="font-size: 40px; font-weight: 600;" align="center">LeetCode Clone</h1>
 
 ## About the Project
 
@@ -36,6 +29,7 @@ An Online Coding platform modern inspired by LeetCode — built from the ground 
 - [Node.js](https://nodejs.org/)
 - [Express.js](https://expressjs.com/)
 - [Socket.IO](https://socket.io/)
+- [Isolate](https://github.com/ioi/isolate)
 - [Prisma ORM](https://www.prisma.io/)
 - [PostgreSQL](https://www.postgresql.org/)
 - [Redis](https://redis.io/)
